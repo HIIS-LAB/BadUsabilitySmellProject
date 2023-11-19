@@ -2,8 +2,10 @@ const express = require('express');
 const cors= require ('cors')
 const bodyParser = require('body-parser');
 const server = express();
-//const cookieParser= require('cookie-parser'); 
+const cookieParser= require('cookie-parser'); 
 const port = 8000;
+const moment = require('moment');
+
 
 //const path= require ('path'); 
 const {MongoClient}= require ('mongodb'); 
@@ -11,13 +13,15 @@ const {MongoClient}= require ('mongodb');
 
 server.use(bodyParser.json());
 server.use(express.static('public'));
-//server.use(cookieParser()); 
+server.use(cookieParser()); 
 
 const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 };
 server.use(cors(corsOptions))
+
+//server.use(cors());
 
 
 /*server.get('/', (req, res) => {
@@ -293,39 +297,42 @@ server.get("/tutte-sessioni", async (req, res) => {
 });
 
 //sessioni filtrate 
-server.get("/sessioni-filtrate", async (req,res) => {
- try{
-   let filtro= {};
+server.get("/sessioni-filtrate", async (req, res) => {
+  try {
+    let filtro = {};
 
-  if (req.query.idFilter) {
-    filtro.idsessione= parseInt(req.query.idFilter);
+    if (req.query.idFilter) {
+      filtro.idsessione = parseInt(req.query.idFilter);
+    }
+
+    if (req.query.startFilter) {
+      const startFilter = moment(req.query.startFilter, 'YYYY-MM-DD').startOf('day').toDate();
+
+      if (req.query.endFilter) {
+        const endFilter = moment(req.query.endFilter, 'YYYY-MM-DD').endOf('day').toDate();
+        filtro.start = {
+          $gte: startFilter,
+          $lte: endFilter,
+        };
+      } else {
+        // Se c'è solo la data di inizio, cerca le sessioni di quel giorno specifico
+        const nextDay = moment(req.query.startFilter, 'YYYY-MM-DD').add(1, 'day').startOf('day').toDate();
+        filtro.start = {
+          $gte: startFilter,
+          $lt: nextDay,
+        };
+      }
+    }
+
+    console.log("Parametri della query:", req.query);
+    const sessioniFiltrate = await collezione.find(filtro).sort({ start: -1 }).toArray();
+    res.json(sessioniFiltrate);
+  } catch (error) {
+    console.error('Errore durante il recupero delle sessioni filtrate:', error);
+    res.status(500).json({ error: 'Errore interno del server' });
   }
+});
 
-  if (req.query.startFilter && req.query.endFilter) {
-      let start = new Date(req.query.startFilter);
-      start.setHours(0,0,0,0);
-
-      let end= new Date(req.query.endFilter)
-      end.setHours(23,59,59,999);
-
-      filtro.start= { $gte: start, $lte: end };
-}else if (req.query.startFilter && !req.query.endFilter){
-  let start = new Date(req.query.startFilter);
-      start.setHours(0, 0, 0, 0);
-
-      filtro.start = { $gte: start };
-}
-  
-  
-
-     console.log("Paramentri della query:", req.query);   
-     const sessioniFiltrate = await collezione.find(filtro).sort({ start: -1 }).toArray();
-     res.json(sessioniFiltrate);
-   } catch (error) {
-     console.error('Errore durante il recupero delle sessioni filtrate:', error);
-     res.status(500).json({ error: 'Errore interno del server' });
-   }
- });  
 
 
 server.listen(port, () => {

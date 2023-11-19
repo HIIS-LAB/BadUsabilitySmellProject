@@ -13,11 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Chiamata tabella filtrata
-function tabellaFiltrata() {
+function applicaFiltri() {
   const idFilter = document.getElementById('idFilter').value;
-  const startFilter = document.getElementById('startFilter').value;
-  const endFilter = document.getElementById('endFilter').value;
+  const startFilterElement = document.getElementById('startFilter').value;
+  const endFilterElement = document.getElementById('endFilter').value;
   const messageDiv = document.getElementById('message');
+  let url = '';
+  let startFilter = null;
+  let endFilter = null;
 
   if (idFilter && !isNumber(idFilter)) {
     messageDiv.innerText = 'Inserire un valore numerico per ID Sessione';
@@ -25,49 +28,99 @@ function tabellaFiltrata() {
     return;
   }
 
-  if (startFilter || endFilter) {
-    const isoStartFilter = startFilter ? new Date(startFilter).toISOString() : '';
-    const isoEndFilter = endFilter ? new Date(endFilter).toISOString() : '';
+  if (startFilterElement) {
+    startFilter = new Date(startFilterElement);
+    if (!validDate(startFilter)) {
+      messageDiv.innerText = 'Inserire una data di inizio valida dal calendario';
+      messageDiv.style.display = 'block';
+      return;
+    }
+  }
 
-    // Modifica della chiamata al server per gestire startFilter senza endFilter
-    fetch(`http://localhost:8000/sessioni-filtrate?idFilter=${idFilter}&startFilter=${isoStartFilter}${isoEndFilter ? `&endFilter=${isoEndFilter}` : ''}`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`Errore durante la richiesta:${response.statusText}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        if (data) {
-          console.log(data);
-          creaTabella(data);
-        } else {
-          console.error('Dati undefined o null ricevuti');
-        }
-      })
-      .catch(error => {
-        console.error('Errore durante la richiesta al server:', error);
-      });
-  } else {
-    messageDiv.innerText = 'Inserire almeno un filtro di data';
+  if (endFilterElement) {
+    endFilter = new Date(endFilterElement);
+    if (!validDate(endFilter)) {
+      messageDiv.innerText = 'Inserire una data di fine valida dal calendario';
+      messageDiv.style.display = 'block';
+      return;
+    }
+  }
+
+  if (startFilter && endFilter && !validRange(startFilter, endFilter)) {
+    messageDiv.innerText = 'La data di inizio deve essere precedente alla data di fine';
+    messageDiv.style.display = 'block';
+    return;
+  }
+
+  if (startFilter && endFilter && idFilter) {
+    url = `http://localhost:8000/sessioni-filtrate?idFilter=${idFilter}&startFilter=${startFilter.toISOString()}&endFilter=${endFilter.toISOString()}`;
+    chiamataFiltri(url);
+  } else if (startFilter && !endFilter && !idFilter) {
+    url = `http://localhost:8000/sessioni-filtrate?startFilter=${startFilter.toISOString()}`;
+    chiamataFiltri(url);
+  } else if (!startFilter && !endFilter && idFilter) {
+    url = `http://localhost:8000/sessioni-filtrate?idFilter=${idFilter}`;
+    chiamataFiltri(url);
+  } else if (!startFilter && endFilter && !idFilter) {
+    messageDiv.innerText = 'Inserire data inizio';
+    messageDiv.style.display = 'block';
+  } else if (startFilter && endFilter && !idFilter) {
+    url = `http://localhost:8000/sessioni-filtrate?startFilter=${startFilter.toISOString()}&endFilter=${endFilter.toISOString()}`;
+    chiamataFiltri(url);
+  } else if (!startFilter && endFilter && idFilter) {
+    messageDiv.innerText = 'Inserire data inizio';
+    messageDiv.style.display = 'block';
+  } else if (startFilter && !endFilter && idFilter) {
+    url = `http://localhost:8000/sessioni-filtrate?idFilter=${idFilter}&startFilter=${startFilter.toISOString()}`;
+    chiamataFiltri(url);
+  } else if (!startFilter && !endFilter && !idFilter) {
+    messageDiv.innerText = 'Inserire almeno un filtro';
     messageDiv.style.display = 'block';
   }
 }
+
+function chiamataFiltri(url) {
+  console.log('URL della richiesta:', url);
+  fetch(url, {
+    method: 'GET',
+    mode: 'cors',
+    credentials: 'same-origin',
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Errore durante la richiesta:${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data) {
+        creaTabella(data);
+      } else {
+        console.error('Dati undefined o null ricevuti');
+      }
+    })
+    .catch(error => {
+      console.error('Errore durante la richiesta al server:', error);
+    });
+}
+
+
 
 // Creazione tabella + messaggi
 function creaTabella(sessioni) {
   const tableBody = document.getElementById('database-table');
   const messageDiv = document.getElementById('message');
-  messageDiv.style.display = 'none';
   tableBody.innerHTML = '';
 
 
   if (sessioni.length === 0) {
-    showMessage('Nessuna sessione trovata');
+    messageDiv.innerText = 'Nessuna sessione trovata';
+    messageDiv.style.display = 'block';
   } else {
     let sessionCount = sessioni.length;
-    showMessage(`${sessionCount} session${sessionCount === 1 ? 'e' : 'i'} visualizzat${sessionCount === 1 ? 'a' : 'e'}`);
-
+    messageDiv.innerText = `${sessionCount} session${sessionCount === 1 ? 'e' : 'i'} visualizzat${sessionCount === 1 ? 'a' : 'e'}`;
+    messageDiv.style.display = 'block';
+    
     sessioni.forEach(sessione => {
       const row = document.createElement('tr');
 
@@ -97,42 +150,13 @@ function formattaEventi(eventi) {
 
 // Validazione data
 function validDate(filter) {
-  const messageDiv = document.getElementById('message');
-  const currentDate = new Date();
-  currentDate.setHours(0, 0, 0, 0);
-
-  if (endDateString && !startDateString) {
-    messageDiv.style.display = 'block';
-    messageDiv.innerText = 'Impostare data inizio';
-    return false;
-  }
-
-  // Converte manualmente la stringa della data in un oggetto Data
-  const dateParts = filter.split('/');
-  const date = new Date(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`);
-
-  if (!isNaN(date.getTime()) && date <= currentDate) {
-    return true;
-  } else {
-    messageDiv.style.display = 'block';
-    messageDiv.innerText = 'Inserire una data valida dal calendario e successiva alla data corrente.';
-    return false;
-  }
+ const inputDate= new Date(filter)
+ return !isNaN(inputDate.getTime()) && inputDate < new Date();
 }
 
 // Validazione intervallo di tempo
-function validRange(startDateString, endDateString) {
-  const startDate = new Date(startDateString);
-  const endDate = new Date(endDateString);
-
-  if (!validDate(startDateString) || !validDate(endDateString)) {
-    showMessage('Inserire date valide dal calendario');
-    return;
-  }
-
-  if (startDate > endDate) {
-    showMessage('La data di inizio deve essere precedente alla data di fine.');
-  }
+function validRange(startFilter, endFilter) {
+  return startFilter <= endFilter; 
 }
 
 // Validazione ID sessione
@@ -194,9 +218,3 @@ function nascondiEVisualizza(sessione, eventsContainer, button) {
   }
 }
 
-// Mostra messaggio
-function showMessage(message) {
-  const messageDiv = document.getElementById('message');
-  messageDiv.style.display = 'block';
-  messageDiv.innerText = message;
-}
