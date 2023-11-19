@@ -1,6 +1,9 @@
 // Chiamata tabella originale
 let originalData;
+let tabellaEspansa = true;
+
 document.addEventListener('DOMContentLoaded', () => {
+  espandiTabella(); 
   fetch('http://localhost:8000/tutte-sessioni')
     .then(response => response.json())
     .then(data => {
@@ -103,7 +106,6 @@ function chiamataFiltri(url) {
       console.error('Errore durante la richiesta al server:', error);
     });
 }
-
 
 
 // Creazione tabella + messaggi
@@ -218,3 +220,23 @@ function nascondiEVisualizza(sessione, eventsContainer, button) {
   }
 }
 
+
+
+function espandiTabella() {
+  const tableRows = document.querySelectorAll('#database-table tr');
+  const button = document.getElementById('buttonEspandi');
+
+  if (tabellaEspansa) {
+    tableRows.forEach(row => {
+      row.style.display = 'table-row';
+    });
+    button.innerText = 'Riduci tabella';
+  } else {
+    tableRows.forEach((row, index) => {
+      row.style.display = index < 5 ? 'table-row' : 'none';
+    });
+    button.innerText = 'Espandi tabella';
+  }
+
+  tabellaEspansa = !tabellaEspansa;
+}
