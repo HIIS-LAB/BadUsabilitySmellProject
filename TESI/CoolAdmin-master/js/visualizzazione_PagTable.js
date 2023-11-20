@@ -132,13 +132,20 @@ function creaTabella(sessioni) {
          <td>${sessione.end}</td>
          <td>${sessione.sessionTime}</td>
          <td>${sessione.itemsEventi}</td>
-         <td></td>`;
+         <td></td>
+         <td></td>`
+         
 
       tableBody.appendChild(row);
-      const buttonCell = row.querySelector('td:last-child');
+      const buttonCell = row.querySelector('td:nth-child(6)');
       const eventsContainer = document.createElement('div');
       buttonCell.appendChild(creaButton(sessione, eventsContainer));
       buttonCell.appendChild(eventsContainer);
+
+      const timelineCell = row.querySelector('td:last-child');
+      const timelineContainer = document.createElement('div');
+      timelineCell.appendChild(creaButtonTimeline(sessione, timelineContainer));
+      timelineCell.appendChild(timelineContainer);
     });
   }
 }
@@ -178,13 +185,15 @@ function eliminaFilter() {
 function creaButton(sessione, eventsContainer) {
   const button = document.createElement('button');
   button.innerText = 'Visualizza eventi';
+  button.classList.add('btn', 'btn-secondary', 'm-2');
   button.addEventListener('click', () => toggleEventi(sessione, eventsContainer, button));
   return button;
 }
 
-// Toggle tra visualizzazione e nascondi eventi
+// Toggle 
 function toggleEventi(sessione, eventsContainer, button) {
   const eventsVisible = eventsContainer.innerHTML.trim() !== '';
+
 
   if (eventsVisible) {
     nascondiEventi(eventsContainer, button);
@@ -197,7 +206,7 @@ function toggleEventi(sessione, eventsContainer, button) {
 function visualizzaEventi(eventi, eventsContainer, button) {
   const formattedEvents = formattaEventi(eventi);
   eventsContainer.innerHTML = `<strong>Eventi:</strong><br>${formattedEvents}<br>`;
-
+ 
   if (button) {
     button.innerText = 'Nascondi eventi';
   }
@@ -206,22 +215,13 @@ function visualizzaEventi(eventi, eventsContainer, button) {
 // Nascondi eventi
 function nascondiEventi(eventsContainer, button) {
   eventsContainer.innerHTML = '';
+ 
   if (button) {
     button.innerText = 'Visualizza eventi';
   }
 }
 
-// Nascondi o visualizza
-function nascondiEVisualizza(sessione, eventsContainer, button) {
-  nascondiEventi(eventsContainer, button);
-  const newButton = creaButton(sessione, eventsContainer);
-  if (button.parentNode) {
-    button.parentNode.replaceChild(newButton, button);
-  }
-}
-
-
-
+//espandi tabella 
 function espandiTabella() {
   const tableRows = document.querySelectorAll('#database-table tr');
   const button = document.getElementById('buttonEspandi');
@@ -240,3 +240,17 @@ function espandiTabella() {
 
   tabellaEspansa = !tabellaEspansa;
 }
+
+//Timeline
+function creaButtonTimeline(sessione, timelineContainer) {
+  const button = document.createElement('button');
+  button.innerText = 'Visualizza timeline';
+  button.classList.add('btn', 'btn-primary', 'm-2');
+  button.addEventListener('click', () => creaTimeline(sessione, timelineContainer, button));
+  return button;
+}
+
+function creaTimeline() {
+
+}
+

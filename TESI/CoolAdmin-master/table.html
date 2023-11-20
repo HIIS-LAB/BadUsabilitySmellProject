@@ -42,7 +42,14 @@
     <div class="page-wrapper">
 
 
-        <!-- MENU SIDEBAR-->
+        
+        <nav class="navbar"> 
+            <div class="navbar__links">
+                <a href="index.html">Dashboard</a>
+               <a href="#" class="active"> Tables</a> 
+            </div>
+        </nav>
+<!--NO
         <aside class="menu-sidebar d-none d-lg-block">
             
             <div class="menu-sidebar__content js-scrollbar1">
@@ -75,6 +82,7 @@
                 </nav>
             </div>
         </aside>
+         -->
         <!-- END MENU SIDEBAR-->
 
         <!-- PAGE CONTAINER-->
@@ -82,6 +90,7 @@
             
 
             <!-- FILTRI-->
+            <div class=" row"> 
             <div class="col-lg-3">
                 <div class="card">
                     <div class="card-header">
@@ -111,10 +120,11 @@
                 </div>
             </div>
         </div>
+   
             <!--MESSAGGIO-->
-            <div class="col-lg-9">
+            <div class="col-lg-3">
                 <div id="message" class="alert alert-info"> </div>
-              </div>
+              
               <!--BUTTON RIDUCI/ESPANDI TABELLA-->
               <div class="card-body card-block"> 
                 <div class="form-group">
@@ -122,6 +132,9 @@
                   
                 </div>
               </div>
+            </div>
+            </div>
+            
               
             <!--TABELLA-->
             <div class="main-content">
@@ -139,13 +152,18 @@
                                                 <th> Durata sessione</th> 
                                                 <th> Numero eventi</th> 
                                                 <th> Eventi</th> 
+                                                <th> Grafico</th>
                                             </tr>
                                         </thead>
                                         <tbody id="database-table">
                                         </tbody>
                                     </table>
+                                   </div>
                                 </div>
                             </div>
+
+           
+          
 
 
     <!-- Jquery JS-->

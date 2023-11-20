@@ -53,9 +53,11 @@ html {
 @-ms-viewport {
     width: device-width
 }
+.aside {
+    display:'none'
+}
 
 article,
-aside,
 dialog,
 figcaption,
 figure,
@@ -78,6 +80,7 @@ body {
     text-align: left;
     background-color: #fff
 }
+
 
 [tabindex="-1"]:focus {
     outline: 0 !important
@@ -4213,6 +4216,7 @@ input[type=submit].btn-block {
 }
 
 .nav {
+
     display: -ms-flexbox;
     display: flex;
     -ms-flex-wrap: wrap;
@@ -4269,7 +4273,7 @@ input[type=submit].btn-block {
 }
 
 .nav-tabs .dropdown-menu {
-    margin-top: -1px;
+    margin-top: 0px;
     border-top-left-radius: 0;
     border-top-right-radius: 0
 }
@@ -4307,7 +4311,9 @@ input[type=submit].btn-block {
 }
 
 .navbar {
-    position: relative;
+    background-color: #000; 
+    padding: 10px; 
+    position: fixed;
     display: -ms-flexbox;
     display: flex;
     -ms-flex-wrap: wrap;
@@ -4316,11 +4322,13 @@ input[type=submit].btn-block {
     align-items: center;
     -ms-flex-pack: justify;
     justify-content: space-between;
-    padding: .5rem 1rem
+    padding: .1rem 1rem
+   
 }
 
 .navbar>.container,
 .navbar>.container-fluid {
+    
     display: -ms-flexbox;
     display: flex;
     -ms-flex-wrap: wrap;

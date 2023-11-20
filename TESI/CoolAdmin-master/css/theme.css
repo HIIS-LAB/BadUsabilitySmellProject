@@ -83,6 +83,8 @@ p {
 
 .table-responsive {
     padding-right: 1px;
+    position: relative; 
+    margin-left:-300px; 
 }
 
 .card {
@@ -4224,10 +4226,13 @@ section {
 
 /* ----- Table ----- */
 .table {
+    
     margin: 0;
+    
 }
 
 .table-responsive.table--no-card {
+   width:170%;
     -webkit-border-radius: 10px;
     -moz-border-radius: 10px;
     border-radius: 10px;
@@ -4237,6 +4242,7 @@ section {
 }
 
 .table-earning thead th {
+     width: 150%;
     background: #333;
     font-size: 16px;
     color: #fff;
@@ -4244,11 +4250,12 @@ section {
     font-weight: 400;
     text-transform: capitalize;
     line-height: 1;
-    padding: 22px 40px;
+    padding: 22px 20px;
     white-space: nowrap;
 }
 
 .table-earning thead th.text-right {
+   
     padding-left: 15px;
     padding-right: 65px;
 }
