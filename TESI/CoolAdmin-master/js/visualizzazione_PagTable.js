@@ -1,4 +1,5 @@
 // Chiamata tabella originale
+
 let originalData;
 let tabellaEspansa = true;
 
@@ -144,7 +145,7 @@ function creaTabella(sessioni) {
 
       const timelineCell = row.querySelector('td:last-child');
       const timelineContainer = document.createElement('div');
-      timelineCell.appendChild(creaButtonTimeline(sessione, timelineContainer));
+      timelineCell.appendChild(creaButtonTimeline(sessione));
       timelineCell.appendChild(timelineContainer);
     });
   }
@@ -242,15 +243,116 @@ function espandiTabella() {
 }
 
 //Timeline
-function creaButtonTimeline(sessione, timelineContainer) {
+function creaButtonTimeline(sessione) {
   const button = document.createElement('button');
   button.innerText = 'Visualizza timeline';
   button.classList.add('btn', 'btn-primary', 'm-2');
-  button.addEventListener('click', () => creaTimeline(sessione, timelineContainer, button));
+  button.addEventListener('click', (event) => creaTimeline(sessione,event));
   return button;
 }
 
-function creaTimeline() {
+function creaTimeline(sessione,event) {
+  const wrapper = document.getElementById('timelineWrapper');
+  wrapper.innerHTML = '';
 
+  const canvas = document.createElement('canvas');
+  canvas.width = 200; 
+  canvas.height = 200;
+  canvas.id= 'timelineCanvas'; 
+  wrapper.appendChild(canvas);
+
+ const closeButton= document.createElement ('button');
+ closeButton.innerText= 'Chiudi'; 
+ closeButton.addEventListener('click', () => { wrapper.innerHTML=''}); 
+ wrapper.appendChild(closeButton); 
+  
+  const datiTimeline = preparaDatiTimeline(sessione.eventi);
+  console.log(datiTimeline);
+  if (!datiTimeline || !datiTimeline.datasets) {
+    console.error('Dati della timeline non validi.');
+    return;
+  }
+
+  const ctx = canvas.getContext('2d');
+  new Chart(ctx, {
+    type: 'scatter',
+    data: datiTimeline,
+    options: {
+      scales: {
+        x: {
+          type: 'linear',
+          position: 'bottom',
+          ticks: {
+            stepSize: 5000, 
+            callback:function (value) {
+              return new Date(value).toLocaleString(); 
+            }
+          }
+          },
+          y: {
+            type: 'category',
+            position:'left',
+            labels: datiTimeline.labels,//datiTimeline.datasets.map((dataset) => dataset.label),
+            ticks : {
+              callback: function (value) {
+                return value || '';
+              }
+            }
+          }
+        },
+        elements: {
+          point: { radius: 5}, 
+        }
+      }
+  })
 }
+
+function preparaDatiTimeline(eventi) {
+  const datasets = [];
+  const labels = [];
+
+  eventi.forEach((evento) => {
+    if (evento.type && !labels.includes(evento.type)) {
+      labels.push(evento.type);
+    }
+
+    const index = labels.indexOf(evento.type);
+    if (index === -1) {
+      console.error('Errore durante la preparazione dei dati.');
+      return;
+    }
+
+    if (!datasets[index]) {
+      datasets[index] = {
+        label: evento.type,
+        data: [],
+        borderColor: getRandomColor(),
+        fill: false,
+      };
+    }
+
+    const timestamp = new Date(evento.time).getTime();
+    datasets[index].data.push({ x: timestamp, y: index });
+  });
+
+  // Filtra eventuali elementi vuoti in datasets
+  const filteredDatasets = datasets.filter((dataset) => dataset !== undefined);
+
+  return {
+    labels,
+    datasets: filteredDatasets,
+  };
+}
+
+
+
+function getRandomColor() {
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
+
 
