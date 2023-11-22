@@ -145,7 +145,7 @@ function creaTabella(sessioni) {
 
       const timelineCell = row.querySelector('td:last-child');
       const timelineContainer = document.createElement('div');
-      timelineCell.appendChild(creaButtonTimeline(sessione));
+      timelineCell.appendChild(creaButtonGRAFICI(sessione));
       timelineCell.appendChild(timelineContainer);
     });
   }
@@ -242,32 +242,83 @@ function espandiTabella() {
   tabellaEspansa = !tabellaEspansa;
 }
 
-//Timeline
-function creaButtonTimeline(sessione) {
+//GRAFICI SESSIONE
+function creaButtonGRAFICI(sessione) {
+  const wrapper = document.getElementById('GraphSessionWrapper');
+  wrapper.innerHTML = '';
+
   const button = document.createElement('button');
-  button.innerText = 'Visualizza timeline';
+  button.innerText = 'Visualizza grafici sessione';
   button.classList.add('btn', 'btn-primary', 'm-2');
-  button.addEventListener('click', (event) => creaTimeline(sessione,event));
+  button.addEventListener('click', (event) => {
+    creaTimeline(sessione,event,wrapper); 
+    creaDonut(sessione,event,wrapper); 
+  });
   return button;
 }
 
-function creaTimeline(sessione,event) {
-  const wrapper = document.getElementById('timelineWrapper');
-  wrapper.innerHTML = '';
+//Chiudi wr
+function Chiudi(wrapper) {
+const closeButton = document.createElement('button');
+  closeButton.innerText = 'Chiudi';
+  closeButton.addEventListener('click', () => {
+    wrapper.innerHTML = '';
+  });
+  wrapper.appendChild(closeButton);
+}
 
+//TIMELINE prepara + crea
+function preparaDatiTimeline(eventi) {
+  const datasets = [];
+  const labelsMap = new Map();
+  const colori = {};
+
+  eventi.forEach((evento) => {
+    const tipoEvento = evento.type;
+    const data = new Date(evento.time);
+
+    if (!colori[tipoEvento]) {
+      colori[tipoEvento] = getRandomColor();
+    }
+
+    const labelKey = `${tipoEvento} (${getItemsCount(eventi, tipoEvento)} items)`;
+
+    if (!labelsMap.has(labelKey)) {
+      labelsMap.set(labelKey, tipoEvento);
+
+      datasets.push({
+        label: labelKey,
+        data: [{ x: data, y: labelKey }],
+        backgroundColor: colori[tipoEvento],
+        borderColor: colori[tipoEvento],
+      });
+    } else {
+      const existingDataset = datasets.find((dataset) => dataset.label === labelKey);
+      existingDataset.data.push({ x: data, y: labelKey });
+    }
+  });
+
+  return {
+    labels: Array.from(labelsMap.keys()),
+    datasets: datasets,
+  };
+}
+
+function getItemsCount(eventi, tipoEvento) {
+  return eventi.filter((evento) => evento.type === tipoEvento).length;
+}
+
+
+function creaTimeline(sessione, event,wrapper) {
   const canvas = document.createElement('canvas');
-  canvas.width = 200; 
-  canvas.height = 200;
-  canvas.id= 'timelineCanvas'; 
+  canvas.width = 1500;
+  canvas.height = 800;
+  canvas.id = 'timelineCanvas';
   wrapper.appendChild(canvas);
-
- const closeButton= document.createElement ('button');
- closeButton.innerText= 'Chiudi'; 
- closeButton.addEventListener('click', () => { wrapper.innerHTML=''}); 
- wrapper.appendChild(closeButton); 
+  Chiudi(wrapper); 
   
   const datiTimeline = preparaDatiTimeline(sessione.eventi);
-  console.log(datiTimeline);
+
   if (!datiTimeline || !datiTimeline.datasets) {
     console.error('Dati della timeline non validi.');
     return;
@@ -283,76 +334,161 @@ function creaTimeline(sessione,event) {
           type: 'linear',
           position: 'bottom',
           ticks: {
-            stepSize: 5000, 
-            callback:function (value) {
-              return new Date(value).toLocaleString(); 
-            }
-          }
+            stepSize: 5000,
+            callback: function (value) {
+              const timeString = new Date(value).toLocaleTimeString();
+              return timeString;
+            },
           },
-          y: {
-            type: 'category',
-            position:'left',
-            labels: datiTimeline.labels,//datiTimeline.datasets.map((dataset) => dataset.label),
-            ticks : {
-              callback: function (value) {
-                return value || '';
-              }
-            }
-          }
         },
-        elements: {
-          point: { radius: 5}, 
-        }
-      }
-  })
+        y: {
+          type: 'category',
+          position: 'left',
+          labels: datiTimeline.labels,
+        },
+      },
+      elements: {
+        point: {
+          radius: 3,
+        },
+      },
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            generateLabels: function (chart) {
+              const datasets = chart.data.datasets;
+              const legendItems = [];
+              const existingLabels = [];
+
+              datasets.forEach((dataset) => {
+                const label = dataset.label;
+
+                if (!existingLabels.includes(label)) {
+                  const item = {
+                    text: label,
+                    fillStyle: dataset.backgroundColor,
+                    hidden: false,
+                    lineCap: 'round',
+                    lineDash: [],
+                    lineDashOffset: 0,
+                    lineJoin: 'round',
+                    lineWidth: 1,
+                    strokeStyle: dataset.borderColor,
+                  };
+
+                  legendItems.push(item);
+                  existingLabels.push(label);
+                }
+              });
+
+              return legendItems;
+            },
+          },
+        },
+      },
+    },
+  });
 }
 
-function preparaDatiTimeline(eventi) {
-  const datasets = [];
+
+
+///////////////////////////////COLORE GRAFICI
+function getRandomColor() {
+  return '#' + Math.floor(Math.random() * 16777215).toString(16);
+}
+
+
+//DONUT prepara + crea 
+function preparaDatiDonut(eventi) {
   const labels = [];
+  const data = [];
+  const colori = [];
 
+  
+  const urlCount = {};
   eventi.forEach((evento) => {
-    if (evento.type && !labels.includes(evento.type)) {
-      labels.push(evento.type);
+    const url = evento.url || 'N/A'; 
+    if (!urlCount[url]) {
+      urlCount[url] = 1;
+      colori.push(getRandomColor()); 
+    } else {
+      urlCount[url]++;
     }
-
-    const index = labels.indexOf(evento.type);
-    if (index === -1) {
-      console.error('Errore durante la preparazione dei dati.');
-      return;
-    }
-
-    if (!datasets[index]) {
-      datasets[index] = {
-        label: evento.type,
-        data: [],
-        borderColor: getRandomColor(),
-        fill: false,
-      };
-    }
-
-    const timestamp = new Date(evento.time).getTime();
-    datasets[index].data.push({ x: timestamp, y: index });
   });
 
-  // Filtra eventuali elementi vuoti in datasets
-  const filteredDatasets = datasets.filter((dataset) => dataset !== undefined);
+  
+  Object.keys(urlCount).forEach((url) => {
+    labels.push(url);
+    data.push(urlCount[url]);
+  });
 
   return {
-    labels,
-    datasets: filteredDatasets,
+    labels: labels,
+    datasets: [{
+      data: data,
+      backgroundColor: colori,
+    }],
   };
 }
 
 
+function creaDonut(sessione, event, wrapper) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 400;
+  canvas.height = 400;
+  canvas.id = 'donutChart';
+  wrapper.appendChild(canvas);
 
-function getRandomColor() {
-  const letters = '0123456789ABCDEF';
-  let color = '#';
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
+  const datiDonut = preparaDatiDonut(sessione.eventi);
+
+  if (!datiDonut || !datiDonut.labels || datiDonut.labels.length === 0) {
+    console.error('Dati del donut non validi o vuoti.');
+    return;
   }
-  return color;
+
+  const ctx = canvas.getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: datiDonut,
+    options: {
+      plugins: {
+        legend: {
+          display: true,
+          position: 'right',
+          labels: {
+            generateLabels: function (chart) {
+              if (chart && chart.config && chart.config.data && chart.config.data.datasets) {
+                const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+
+                labels.forEach((label) => {
+                  const dataset = chart.config.data.datasets[0].data;
+                  const total = dataset.reduce((acc, value) => acc + value, 0);
+                  const percentage = ((dataset[label.index] / total) * 100).toFixed(2);
+                  label.text += ` (${percentage}%)`;
+                });
+
+                return labels;
+              }
+
+              return [];
+            },
+          },
+        },
+      },
+      cutout: '50%',
+      tooltips: {
+        callbacks: {
+          label: function (context) {
+            const label = context.label || '';
+            const value = context.parsed || 0;
+            const dataset = context.dataset.data;
+            const total = dataset.reduce((acc, value) => acc + value, 0);
+            const percentage = ((value / total) * 100).toFixed(2);
+            return `${label}: ${percentage}%`;
+          },
+        },
+      },
+    },
+  });
 }
-
-
