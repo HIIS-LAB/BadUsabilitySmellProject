@@ -116,13 +116,9 @@ function creaTabella(sessioni) {
   tableBody.innerHTML = '';
 
 
-  if (sessioni.length === 0) {
-    messageDiv.innerText = 'Nessuna sessione trovata';
-    messageDiv.style.display = 'block';
-  } else {
+  if (sessioni && Array.isArray(sessioni) && sessioni.length > 0) {
     let sessionCount = sessioni.length;
     messageDiv.innerText = `${sessionCount} session${sessionCount === 1 ? 'e' : 'i'} visualizzat${sessionCount === 1 ? 'a' : 'e'}`;
-    messageDiv.style.display = 'block';
     
     sessioni.forEach(sessione => {
       const row = document.createElement('tr');
@@ -148,14 +144,23 @@ function creaTabella(sessioni) {
       timelineCell.appendChild(creaButtonGRAFICI(sessione));
       timelineCell.appendChild(timelineContainer);
     });
+    }else{
+    messageDiv.innerText = 'Nessuna sessione trovata';
+    messageDiv.style.display = 'block';
+
   }
-}
+  }
+
 
 // Formattazione eventi
 function formattaEventi(eventi) {
-  return eventi.map((evento, index) => {
-    return `<br><span style="color: red;"> ${index} : </span>{type: "${evento.type}",<br>&nbsp;&nbsp;xpath: "${evento.xpath}",<br>&nbsp;&nbsp;url: "${evento.url}",<br>&nbsp;&nbsp;time: "${evento.time}"}<br>`;
-  }).join('');
+  if (eventi && Array.isArray(eventi) && eventi.length > 0) {
+    return eventi.map((evento, index) => {
+      return `<br><span style="color: red;"> ${index} : </span>{type: "${evento.type}",<br>&nbsp;&nbsp;xpath: "${evento.xpath}",<br>&nbsp;&nbsp;url: "${evento.url}",<br>&nbsp;&nbsp;time: "${evento.time}"}<br>`;
+    }).join('');
+  } else {
+    return 'Nessun evento disponibile';
+  }
 }
 
 // Validazione data
@@ -298,8 +303,8 @@ function creaDiv (sessione,event) {
   creaTimeline(sessione,event, newDiv);
   creaDonut(sessione,event,newDiv);
   creaBarre(sessione,event,newDiv); 
-  //creaHeatmap(sessione,event,newDiv); 
-  creaScatterplot (sessione,event,newDiv,500,500); 
+  creaHeatmap(sessione,event,newDiv); 
+  //creaScatterplot (sessione,event,newDiv,500,500); 
 
   newDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
   return newDiv;
@@ -327,6 +332,7 @@ function preparaDatiTimeline(eventi) {
   const labelsMap = new Map();
   const colori = {};
 
+  if (eventi && Array.isArray(eventi)) {
   eventi.forEach((evento) => {
 
     if (evento && evento.type && evento.time) {
@@ -356,6 +362,7 @@ function preparaDatiTimeline(eventi) {
   }
   }
   });
+}
 
   return {
     labels: Array.from(labelsMap.keys()),
@@ -659,75 +666,80 @@ function creaBarre (sessione,event,wrapper) {
 }
 
 
-
-
-/*
 ////HEATMAP prepara+crea
 function preparaDatiHeatmap(eventi) {
-  const data = [];
+  const data = {};
+
   eventi.forEach((evento) => {
-    if (evento && evento.xpath) {
+    if (evento && evento.xpath && evento.url) {
       const xpath = evento.xpath;
-      data.push({ x: xpath, value: 1 });
-    }
+      const url= evento.url; 
+    
+      if (!data[url]) {
+        data[url] = {};
+      }
+
+      if (!data[url][xpath]) {
+        data[url][xpath] = 1;
+      } else {
+        data[url][xpath]++;
+      }
+    } 
   });
-  return {
-    data: data,
-  };
+
+  return data; 
 }
 
 /////
 function creaHeatmap(sessione, event, wrapper) {
-  const datiHeatmap = preparaDatiHeatmap(sessione.eventi);
+  
+  let datiHeatmap = preparaDatiHeatmap(sessione.eventi);
 
-  if (!datiHeatmap || !datiHeatmap.data || datiHeatmap.data.length === 0) {
-    console.error('Dati del heatmap non validi o vuoti.');
+  if (!datiHeatmap || Object.keys(datiHeatmap).length === 0) {
+    console.error('Dati del grafico a barre non validi o vuoti.');
     return;
   }
-  const width = 500; 
-  const height = 500; 
-  const heatmapContainer = document.createElement('div');
-  heatmapContainer.style.width = `${width}px`;
-  heatmapContainer.style.height = `${height}px`;
-  heatmapContainer.id = 'heatmapContainer';
-  wrapper.appendChild(heatmapContainer);
 
-const xScale = d3.scaleLinear()
-    .domain([0, d3.max(datiHeatmap.data, d => calcolaPosizioneX(d.x))])
-    .range([0, width]);
+  Object.entries(datiHeatmap).forEach(([url, datiHeatmap]) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = wrapper.clientWidth * 1.1; 
+    canvas.height = wrapper.clientHeight * 0.2; 
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.id = `Heatmap_${encodeURIComponent(url)}`;
+    wrapper.appendChild(canvas);
 
-  const yScale = d3.scaleLinear()
-    .domain([0, d3.max(datiHeatmap.data, d => calcolaPosizioneY(d.x))])
-    .range([0, height]);
-  const colorScale = d3.scaleSequential(d3.interpolateReds);
+    const ctx = canvas.getContext('2d');
+
+    const numCols = Object.values(datiHeatmap).length;
+    const cellWidth = canvas.width / numCols;
+    const cellHeight = canvas.height;
   
-  const heatmap = d3.select(`#${heatmapContainer.id}`)
-    .append('svg')
-    .attr('width', width)
-    .attr('height', height)
-    .selectAll('rect')
-    .data(datiHeatmap.data)
-    .enter()
-    .append('rect')
-    .attr('x', d => xScale(calcolaPosizioneX(d.x)))
-    .attr('y', d => yScale(calcolaPosizioneY(d.x)))
-    .attr('width', 10)
-    .attr('height', 10)
-    .attr('fill', (d) => colorScale(d.value));
-}
+    const xScale = (index,cellSize) => index * cellSize;
+    const yScale = () => 0;
 
-function calcolaPosizioneX(xpath) {
-  const segmenti = xpath.split('/').filter(segmento => segmento.trim() !== '');
-  return segmenti.length;
-}
+    const maxOccorrenze = Math.max(...Object.values(datiHeatmap));
 
-function calcolaPosizioneY (xpath) {
-  const segmenti = xpath.split('/').filter(segmento => segmento.trim() !== '');
-  return segmenti.length;
-}*/
+    Object.entries(datiHeatmap).forEach(([xpath, value], index) => {
+      const cellSize = canvas.width / Object.values(datiHeatmap).length;
+      const intensity = maxOccorrenze === 0 ? 0 : value / maxOccorrenze;
+
+   ctx.strokeStyle = '#000000';
+   ctx.lineWidth = 1;
+   ctx.strokeRect(xScale(index,cellSize), yScale(), cellWidth, cellHeight);
+
+    ctx.fillStyle = `rgba(255, 0, 0, ${intensity})`;
+    ctx.fillRect(xScale(index,cellSize), yScale(), cellWidth, cellHeight);
+
+    ctx.fillStyle = '#000000';
+    ctx.font = '20px Arial';
+    ctx.fillText(`${value} items`, xScale(index,cellSize) + 5, yScale() + 15);
+    });
+  });
+}
 
 //////SCATTER
-function estraiCoordinateXPath(xpath) {
+/*function estraiCoordinateXPath(xpath) {
   const segmenti = xpath.split('/').filter(segmento => segmento.trim() !== '');
   if (segmenti.length > 0) {
     const coordinataX = segmenti.length;  
@@ -769,4 +781,4 @@ function creaScatterplot(sessione, event, wrapper, width, height) {
   } else {
     console.error('Array di eventi non valido o non definito.');
   }
-}
+}*/
