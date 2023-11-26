@@ -314,9 +314,12 @@ function creaDiv (sessione,event) {
   barChartCanvas.id = 'barChart_' + sessione.idsessione;
   newDiv.appendChild(barChartCanvas);
 
-  const heatmapContainer = document.createElement('div');
-  heatmapContainer.id = 'heatmapContainer_' + sessione.idsessione;
-  newDiv.appendChild(heatmapContainer);
+  const mapsCanvas = document.createElement('canvas');
+  mapsCanvas.style.width = 'auto';
+  mapsCanvas.style.height = 'auto';
+  mapsCanvas.id = 'maps_' + sessione.idsessione;
+  newDiv.appendChild(mapsCanvas);
+
 
 
   document.body.appendChild(newDiv); 
@@ -325,7 +328,7 @@ function creaDiv (sessione,event) {
   creaTimeline(sessione,event, newDiv);
   creaDonut(sessione,event,newDiv);
   creaBarre(sessione,event,newDiv); 
-  creaHeatmap(sessione,event,newDiv); 
+  creaMap(sessione,event,newDiv); 
   
   newDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
   return newDiv;
@@ -687,95 +690,65 @@ function creaBarre (sessione,event,wrapper) {
 }
 
 
-////HEATMAP prepara+crea
-function preparaDatiHeatmap(eventi) {
-  const data = {};
+////MAPPA
+function getCoordinates(identifier) {
+  let element;
 
-  eventi.forEach((evento) => {
-    if (evento && evento.xpath && evento.url) {
-      const xpath = evento.xpath;
-      const url = evento.url;
-
-      if (!data[url]) {
-        data[url] = {};
-      }
-
-      if (!data[url][xpath]) {
-        data[url][xpath] = [];
-      } else {
-        data[url][xpath]++;
-      }
-    }
-  });
-
-  return data;
-}
-
-/////
-function creaHeatmap(sessione, event, wrapper) {
-  let datiHeatmap = preparaDatiHeatmap(sessione.eventi);
-
-  if (!datiHeatmap || Object.keys(datiHeatmap).length === 0) {
-    console.error('Dati del grafico a barre non validi o vuoti.');
-    return;
+  if (identifier.startsWith('#')) {
+    // Assuming it's an ID
+    const id = identifier.substring(1);
+    element = document.getElementById(id);
+  } else {
+    // Assuming it's an XPath
+    const xpathResult = document.evaluate(
+      identifier,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null
+    );
+    element = xpathResult.singleNodeValue;
   }
 
-  Object.entries(datiHeatmap).forEach(([url, dati]) => {
-    const container = document.createElement('div');
-    container.className = 'heatmap-container';
-    container.style.display = 'flex';
-    wrapper.appendChild(container);
+  if (element) {
+    // Calcola le coordinate basate sulle dimensioni della finestra del browser
+    const rect = element.getBoundingClientRect();
+    return {
+      x: rect.left + window.scrollX + rect.width / 2,
+      y: rect.top + window.scrollY + rect.height / 2,
+    };
+  } else {
+    console.warn(`Element not found for identifier: ${identifier}`);
+    return null;
+  }
+}
 
-    const canvas = document.createElement('canvas');
-    canvas.width = wrapper.clientWidth * 1.2;
-    canvas.height = wrapper.clientHeight * 0.2;
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.id = `Heatmap_${encodeURIComponent(url)}`;
-    container.appendChild(canvas);
 
-    const legend = document.createElement('div');
-    legend.className = 'legend';
-    container.appendChild(legend);
-    legend.style.marginLeft = '10px';
+//
+function creaMap(sessione,evento,wrapper) {
+  const canvas = document.createElement('canvas');
+  canvas.style.width = '100%';
+  canvas.style.height = '300px';
+  wrapper.appendChild(canvas);
 
-    const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d');
 
-    const numCols = Object.values(dati).length;
-    const numRows = Object.keys(dati).length;
-    const cellWidth = canvas.width / numCols;
-    const cellHeight = canvas.height / numRows;
+  // Itera sugli eventi della sessione
+  sessione.eventi.forEach((evento, index) => {
+    // Ottenere le coordinate per l'evento
+    const coordinates = getCoordinates(evento.xpath);
 
-    const xScale = (index, cellSize) => index * cellSize;
-    const yScale = (index, cellSize) => index * cellSize;
+    if (coordinates) {
+      // Disegnare un cerchio per rappresentare l'evento sulla mappa
+      ctx.beginPath();
+      ctx.arc(coordinates.x, coordinates.y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = 'blue';
+      ctx.fill();
+      ctx.stroke();
 
-    const maxOccorrenze = Math.max(...Object.values(dati));
-
-    Object.entries(dati).forEach(([xpath, value], colIndex) => {
-      for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
-        const intensity = maxOccorrenze === 0 ? 0 : value / maxOccorrenze;
-
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(xScale(colIndex, cellWidth), yScale(rowIndex, cellHeight), cellWidth, cellHeight);
-
-        ctx.fillStyle = `rgba(255, 0, 0, ${intensity})`;
-        ctx.fillRect(xScale(colIndex, cellWidth), yScale(rowIndex, cellHeight), cellWidth, cellHeight);
-
-        if (rowIndex === 0) {
-          const legendItem = document.createElement('div');
-          legendItem.className = 'legend-item';
-          legendItem.style.backgroundColor = `rgba(255, 0, 0, ${intensity})`;
-          legendItem.style.display = 'flex';
-
-          const legendText = document.createElement('span');
-          legendText.textContent = `${value} items: ${xpath}`;
-          legendText.style.marginRight = '15px';
-
-          legendItem.appendChild(legendText);
-          legend.appendChild(legendItem);
-        }
-      }
-    });
+      // Aggiungere una descrizione dell'evento vicino al cerchio
+      ctx.font = '10px Arial';
+      ctx.fillText(`Evento ${index + 1}: ${evento.type}`, coordinates.x + 10, coordinates.y);
+    }
   });
 }

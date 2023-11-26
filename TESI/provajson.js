@@ -119,7 +119,7 @@ function sendEvent () {
     if (!timeEvent) {
         timeEvent = setInterval(function () {
           inviaRichiesta();
-        }, 60000); 
+        }, 20000); 
     }
 
 }
@@ -136,8 +136,10 @@ settings.events.split(" ").forEach(function(evento) {
         console.log("Evento rilevato: " + event.type);
 
         var elemento= event.target;
-        var xpath= getXPath(elemento); 
-        aggiungiEvento (event.type,xpath); 
+        var coordinates = calculateCoordinates(elemento);
+        const xpathWithCoordinates = getXPath(elemento,coordinates);
+
+        aggiungiEvento (event.type,xpathWithCoordinates); 
         gestisciEventi (event); 
     });
 });
@@ -148,9 +150,11 @@ settings.touchevents.split(" ").forEach(function(evento) {
     window.addEventListener(evento, function(event) {
         console.log("Evento touch rilevato: " + event.type);
         var elemento= event.target;
-        var xpath= getXPath(elemento); 
+        var coordinates = calculateCoordinates(elemento);
 
-        aggiungiEvento(event.type,xpath); 
+        const xpathWithCoordinates = getXPath(elemento, coordinates);
+
+        aggiungiEvento(event.type,xpathWithCoordinates); 
         gestisciEventi (event); 
     });
 }); 
@@ -203,33 +207,50 @@ function gestisciEventi (event) {
         
     }
 
-
-function getXPath(element) {
-    if (!element) {
-        return "element is not defined";
-    } else if (element.id) {
-       return `#${element.id}`
-    } else {  
-        const parent = element.parentNode;
-
-        if (!parent) {
-            return '/html';
+    function getXPath(element, coordinates) {
+        if (!element) {
+            return "element is not defined";
+        } else if (element.id) {
+            return `#${element.id} ${coordinates}`;
         } else {
-            const children = parent.children;
-            const index = children ? [...children].indexOf(element) : -1;
-            const nodeName= element.nodeName.toLowerCase();
-            if (index>=0 && index < children.length) {
-            return `${getXPath(parent)}/${nodeName}[${index + 1}]`;
-        } else {
-            return `${getXPath(parent)}/${nodeName}`
+            const parent = element.parentNode;
+    
+            if (!parent) {
+                return `/html ${coordinates}`;
+            } else {
+                const children = parent.children;
+                const index = children ? [...children].indexOf(element) : -1;
+                const nodeName = element.nodeName.toLowerCase();
+    
+                if (index >= 0 && index < children.length) {
+                    return `${getXPath(parent)}/${nodeName}[${index + 1}] ${coordinates}`;
+                } else {
+                    return `${getXPath(parent)}/${nodeName} ${coordinates}`;
+                }
+            }
         }
-    }}}
+    }
+    
+    function calculateCoordinates(element) {
+
+        if (!element || typeof element.getBoundingClientRect !== 'function') {
+            console.log("Elemento non valido o manca il metodo getBoundingClientRect");
+            return "(undefined, undefined)";
+        } else if (element.id) {
+            const rect = element.getBoundingClientRect();
+            console.log("Coordinate rettangolo:", rect);
+            return `(${rect.left + window.scrollX + rect.width / 2}, ${rect.top + window.scrollY + rect.height / 2})`;
+        } else {
+            const rect = element.getBoundingClientRect();
+            return `(${rect.left + window.scrollX + rect.width / 2}, ${rect.top + window.scrollY + rect.height / 2})`;
+        }
+    }
         
           
-function aggiungiEvento (event,xpath) {
+function aggiungiEvento (event,xpathWithCoordinates) {
     eventiCorrenti.push({
         type:event,
-        xpath:xpath,
+        xpath:xpathWithCoordinates,
         url: window.location.href,
         time: getTimestamp()
 });
