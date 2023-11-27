@@ -691,64 +691,115 @@ function creaBarre (sessione,event,wrapper) {
 
 
 ////MAPPA
-function getCoordinates(identifier) {
-  let element;
+function getCoordinates(xpath) {
+  var match = xpath.match(/\(([^,]+),\s([^)]+)\)/);
 
-  if (identifier.startsWith('#')) {
-    // Assuming it's an ID
-    const id = identifier.substring(1);
-    element = document.getElementById(id);
-  } else {
-    // Assuming it's an XPath
-    const xpathResult = document.evaluate(
-      identifier,
-      document,
-      null,
-      XPathResult.FIRST_ORDERED_NODE_TYPE,
-      null
-    );
-    element = xpathResult.singleNodeValue;
+  if (match) {
+    var x = match[1].trim();
+    var y = match[2].trim();
+
+    if (x !== 'undefined' && y !== 'undefined' && !isNaN(x) && !isNaN(y)) {
+      return { x: parseFloat(x), y: parseFloat(y) };
+    }
   }
 
-  if (element) {
-    // Calcola le coordinate basate sulle dimensioni della finestra del browser
-    const rect = element.getBoundingClientRect();
-    return {
-      x: rect.left + window.scrollX + rect.width / 2,
-      y: rect.top + window.scrollY + rect.height / 2,
-    };
-  } else {
-    console.warn(`Element not found for identifier: ${identifier}`);
-    return null;
-  }
+  return { x: 0, y: 0 };
 }
-
 
 //
-function creaMap(sessione,evento,wrapper) {
-  const canvas = document.createElement('canvas');
-  canvas.style.width = '100%';
-  canvas.style.height = '300px';
-  wrapper.appendChild(canvas);
+function creaMap(sessione,event, wrapper) {
+ 
+  const urlData = {};
+ 
+  sessione.eventi.forEach(evento => {
+    if (evento.xpath && evento.xpath.includes('(') && evento.xpath.includes(')')) {
+      var coordinates = getCoordinates(evento.xpath);
+      console.log(`Coordinate originali: x=${coordinates.x}, y=${coordinates.y}`);
+      
+      const key = evento.url; 
+            if (!urlData[key]) {
+        urlData[key] = { data: {}, count: 0 };
+      }
 
-  const ctx = canvas.getContext('2d');
+      const data = urlData[key].data;
 
-  // Itera sugli eventi della sessione
-  sessione.eventi.forEach((evento, index) => {
-    // Ottenere le coordinate per l'evento
-    const coordinates = getCoordinates(evento.xpath);
+      const coordsKey = `${coordinates.x}_${coordinates.y}`;
+      if (data[coordsKey]) {
+        data[coordsKey].count++;
+        data[coordsKey].events.push(evento.type);
+      } else {
+        data[coordsKey] = {
+          x: coordinates.x,
+          y: coordinates.y,
+          count: 1,
+          events: [evento.type], 
+        };
+      }
 
-    if (coordinates) {
-      // Disegnare un cerchio per rappresentare l'evento sulla mappa
-      ctx.beginPath();
-      ctx.arc(coordinates.x, coordinates.y, 5, 0, 2 * Math.PI);
-      ctx.fillStyle = 'blue';
-      ctx.fill();
-      ctx.stroke();
-
-      // Aggiungere una descrizione dell'evento vicino al cerchio
-      ctx.font = '10px Arial';
-      ctx.fillText(`Evento ${index + 1}: ${evento.type}`, coordinates.x + 10, coordinates.y);
+      urlData[key].count++;
     }
   });
+
+  
+  Object.keys(urlData).forEach(url => {
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.id = `maps_${url.replace(/\W/g, '_')}`;
+    wrapper.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    const data = urlData[url].data;
+
+    const bubbleData = Object.values(data).map(item => {
+      return {
+        x: item.x,
+        y: item.y,
+        r: Math.min(item.count * 5, 30),
+        backgroundColor: getRandomColor(),
+        events: item.events,
+      };
+    });
+
+    new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: `Eventi - \n ${url} \n(${urlData[url].count} eventi)`,
+          data: bubbleData,
+          pointBackgroundColor: bubbleData.map(item => item.backgroundColor),
+          pointRadius: bubbleData.map(item => item.r),
+        }]
+      },
+      options: {
+        scales: {
+          x: {
+            type: 'linear',
+            position: 'bottom',
+            min: 0,
+          },
+          y: {
+            type: 'linear',
+            position: 'top', 
+            reverse: true,
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const eventInfo = data[`${context.parsed.x}_${context.parsed.y}`];
+                const eventCount = eventInfo.count;
+                const eventTypes = eventInfo.events.join(', ');
+
+               return `Eventi: ${eventCount}\nTipo:${eventTypes.replace(/, /g, '\n')}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  });
 }
+
+ 
