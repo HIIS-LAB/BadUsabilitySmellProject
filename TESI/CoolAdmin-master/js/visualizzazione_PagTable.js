@@ -108,6 +108,28 @@ function chiamataFiltri(url) {
     });
 }
 
+// formatta data
+function formattaStartEnd(dataOra) {
+  const data = new Date(dataOra);
+
+const giorno = data.getDate();
+const mese = data.getMonth() + 1; 
+const anno = data.getFullYear();
+
+const ore = data.getHours();
+const minuti = data.getMinutes();
+const secondi = data.getSeconds();
+const millisecondi = data.getMilliseconds();
+
+const dataFormattata = `<span style="color: red;">DAY: </span>${aggiungiZero(giorno)}-${aggiungiZero(mese)}-${anno}`;
+const oraFormattata = `<span style="color: red;">TIME:</span>${aggiungiZero(ore)}:${aggiungiZero(minuti)}:${aggiungiZero(secondi)}.${millisecondi}`;
+
+return `${dataFormattata}<br>${oraFormattata}`;
+}
+
+function aggiungiZero(numero) {
+return numero < 10 ? `0${numero}` : numero;
+}
 
 // Creazione tabella + messaggi
 function creaTabella(sessioni) {
@@ -125,8 +147,8 @@ function creaTabella(sessioni) {
 
       row.innerHTML =
         `<td>${sessione.idsessione}</td>
-         <td>${sessione.start}</td>
-         <td>${sessione.end}</td>
+         <td>${formattaStartEnd(sessione.start)}</td>
+         <td>${formattaStartEnd(sessione.end)}</td>
          <td>${sessione.sessionTime}</td>
          <td>${sessione.itemsEventi}</td>
          <td></td>
@@ -151,6 +173,8 @@ function creaTabella(sessioni) {
   }
   }
 
+  
+  
 
 // Formattazione eventi
 function formattaEventi(eventi) {
@@ -187,10 +211,10 @@ function eliminaFilter() {
   creaTabella(originalData);
 }
 
-// Crea pulsante
+// Crea button log 
 function creaButton(sessione, eventsContainer) {
   const button = document.createElement('button');
-  button.innerText = 'Visualizza eventi';
+  button.innerText = 'LOG';
   button.classList.add('btn', 'btn-secondary', 'm-2');
   button.addEventListener('click', () => toggleEventi(sessione, eventsContainer, button));
   return button;
@@ -214,7 +238,7 @@ function visualizzaEventi(eventi, eventsContainer, button) {
   eventsContainer.innerHTML = `<strong>Eventi:</strong><br>${formattedEvents}<br>`;
  
   if (button) {
-    button.innerText = 'Nascondi eventi';
+    button.innerText = 'Close';
   }
 }
 
@@ -223,11 +247,11 @@ function nascondiEventi(eventsContainer, button) {
   eventsContainer.innerHTML = '';
  
   if (button) {
-    button.innerText = 'Visualizza eventi';
+    button.innerText = 'LOG';
   }
 }
 
-//espandi tabella 
+//espandi-riduci tabella 
 function espandiTabella() {
   const tableRows = document.querySelectorAll('#database-table tr');
   const button = document.getElementById('buttonEspandi');
@@ -249,10 +273,10 @@ function espandiTabella() {
 
 
 
-//GRAFICI SESSIONE
+//creazione button "analisi sessione"
 function creaButtonGRAFICI(sessione) {
   const button = document.createElement('button');
-  button.innerText = 'Visualizza grafici sessione';
+  button.innerText = 'Analisi sessione';
   button.classList.add('btn', 'btn-primary', 'm-2');
   button.addEventListener('click', (event) => {
     const existingDiv = document.getElementById('graphContainer_' + sessione.idsessione);
@@ -267,20 +291,46 @@ function creaButtonGRAFICI(sessione) {
   return button;
 }
 
-//crea DIV 
+
+//crea DIV (riepilogo + smell)
 function creaDiv (sessione,event) {
   const existingDiv = document.getElementById('graphContainer_' + sessione.idsessione);
 
   if (existingDiv) {
-    existingDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    existingDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
     return existingDiv;
   }
 
   const newDiv = document.createElement('div');
   newDiv.id = 'graphContainer_' + sessione.idsessione;
+  newDiv.style.backgroundColor= "white"
+  newDiv.style.marginLeft='5%'
+  newDiv.style.width = '90%'; 
+  newDiv.style.height = 'auto'; 
+  
+  //newDiv.style.margin = '5% auto'; 
+
+  
   newDiv.classList.add('graph-container');
+  Chiudi(newDiv)
+
+/*const divSMELL= document.createElement('div');
+divSMELL.style.marginLeft= '50%';
+newDiv.appendChild(divSMELL);
+
+const buttonSMELL= document.createElement('button');
+buttonSMELL.innerText = 'Usability bad smell detector';
+buttonSMELL.classList.add('btn', 'btn-primary', 'm-2');
+buttonSMELL.addEventListener('click', (event) => {
+
+divSMELL.innerHTML= ` USABILITY BAD SMELL N.1: "Too Close Element"`
+
+});
+divSMELL.appendChild(buttonSMELL);*/
 
   const riepilogo = document.createElement('div');
+  
   riepilogo.innerHTML = `
     <h3>RIEPILOGO SESSIONE</h3>
     <p>Session ID: ${sessione.idsessione}</p>
@@ -289,64 +339,52 @@ function creaDiv (sessione,event) {
     <p>Durata: ${sessione.sessionTime} minuti</p>
     <p>Numero eventi: ${sessione.itemsEventi}</p>
   `;
+  riepilogo.style.backgroundColor= 'lightblue';
+  riepilogo.style.width='30%'
+  riepilogo.style.border='solid'
+  
+  riepilogo.style.paddingTop='1%'
+  riepilogo.style.paddingBottom='1%'
+  riepilogo.style.paddingRight='1%'
+  riepilogo.style.paddingLeft='1%'
+
   newDiv.appendChild(riepilogo);
-
-
-  newDiv.style.width = '50%'; 
-  newDiv.style.height = '50%'; 
-  //newDiv.style.margin = '5% auto'; 
-
-  const timelineCanvas = document.createElement('canvas');
-  timelineCanvas.style.width = 'auto'; 
-  timelineCanvas.style.height = 'auto';
-  timelineCanvas.id = 'timelineCanvas_' + sessione.idsessione; 
-  newDiv.appendChild(timelineCanvas);
-
-  const donutCanvas = document.createElement('canvas');
-  donutCanvas.style.width = 'auto';
-  donutCanvas.style.height = 'auto';
-  donutCanvas.id = 'donutChart_' + sessione.idsessione; 
-  newDiv.appendChild(donutCanvas);
-
-  const barChartCanvas = document.createElement('canvas');
-  barChartCanvas.style.width = 'auto';
-  barChartCanvas.style.height = 'auto';
-  barChartCanvas.id = 'barChart_' + sessione.idsessione;
-  newDiv.appendChild(barChartCanvas);
-
-  const mapsCanvas = document.createElement('canvas');
-  mapsCanvas.style.width = 'auto';
-  mapsCanvas.style.height = 'auto';
-  mapsCanvas.id = 'maps_' + sessione.idsessione;
-  newDiv.appendChild(mapsCanvas);
-
-
 
   document.body.appendChild(newDiv); 
 
-  Chiudi(newDiv);
+  
   creaTimeline(sessione,event, newDiv);
   creaDonut(sessione,event,newDiv);
   creaBarre(sessione,event,newDiv); 
   creaMap(sessione,event,newDiv); 
   
-  newDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  newDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
   return newDiv;
 
 }
 
+//RIEPILOGO
+function riepilogo(){
+  
+}
 
 //Chiudi DIV
 function Chiudi(newDiv) {
 const closeButton = document.createElement('button');
+closeButton.innerText = 'Chiudi';
+//closeButton.classList.add('btn', 'btn-secondary', 'm-2');
   closeButton.innerText = 'Chiudi';
-  closeButton.style.marginTop = '5%';
-  closeButton.style.marginLeft = '50%';
-  
+  closeButton.style.color='black';
+  closeButton.style.float="right";
+  closeButton.style.top='-20px'
 
+  //closeButton.style.marginLeft='90%'
+  //closeButton.style.marginTop='-110%'
+  
   closeButton.addEventListener('click', () => {
     newDiv.remove();
   });
+
   newDiv.appendChild(closeButton);
 }
 
@@ -398,8 +436,6 @@ function preparaDatiTimeline(eventi) {
 /////
 function creaTimeline(sessione, event,wrapper) {
   const canvas = document.createElement('canvas');
-  canvas.style.width = '100%';
-  canvas.style.height = 'auto';
   canvas.id = 'timelineCanvas';
   wrapper.appendChild(canvas);
 
@@ -541,7 +577,7 @@ function preparaDatiDonut(eventi) {
 //////
 function creaDonut(sessione, event, wrapper) {
   const canvas = document.createElement('canvas');
-  canvas.style.width = '100%';
+  canvas.style.width = '80%';
   canvas.style.height = 'auto';
   canvas.id = 'donutChart';
   wrapper.appendChild(canvas);
@@ -644,7 +680,7 @@ function preparaDatiBarre(eventi) {
 ////
 function creaBarre (sessione,event,wrapper) {
   const canvas = document.createElement('canvas');
-  canvas.style.width = '100%';
+  canvas.style.width = '80%';
   canvas.style.height = 'auto';
   canvas.id = 'barChart';
   wrapper.appendChild(canvas);
@@ -701,23 +737,24 @@ function getCoordinates(xpath) {
     if (x !== 'undefined' && y !== 'undefined' && !isNaN(x) && !isNaN(y)) {
       return { x: parseFloat(x), y: parseFloat(y) };
     }
-  }
-
+  } 
+/// no 00 ma escludi 
   return { x: 0, y: 0 };
 }
 
+
+
 //
-function creaMap(sessione,event, wrapper) {
- 
+function creaMap(sessione, event, wrapper) {
   const urlData = {};
- 
+
   sessione.eventi.forEach(evento => {
     if (evento.xpath && evento.xpath.includes('(') && evento.xpath.includes(')')) {
       var coordinates = getCoordinates(evento.xpath);
       console.log(`Coordinate originali: x=${coordinates.x}, y=${coordinates.y}`);
-      
-      const key = evento.url; 
-            if (!urlData[key]) {
+
+      const key = evento.url;
+      if (!urlData[key]) {
         urlData[key] = { data: {}, count: 0 };
       }
 
@@ -732,7 +769,7 @@ function creaMap(sessione,event, wrapper) {
           x: coordinates.x,
           y: coordinates.y,
           count: 1,
-          events: [evento.type], 
+          events: [evento.type],
         };
       }
 
@@ -740,11 +777,10 @@ function creaMap(sessione,event, wrapper) {
     }
   });
 
-  
   Object.keys(urlData).forEach(url => {
     const canvas = document.createElement('canvas');
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
+    canvas.style.width = '80%';
+    canvas.style.height = 'auto';
     canvas.id = `maps_${url.replace(/\W/g, '_')}`;
     wrapper.appendChild(canvas);
 
@@ -761,45 +797,51 @@ function creaMap(sessione,event, wrapper) {
       };
     });
 
-    new Chart(ctx, {
-      type: 'scatter',
-      data: {
-        datasets: [{
-          label: `Eventi - \n ${url} \n(${urlData[url].count} eventi)`,
-          data: bubbleData,
-          pointBackgroundColor: bubbleData.map(item => item.backgroundColor),
-          pointRadius: bubbleData.map(item => item.r),
-        }]
-      },
-      options: {
-        scales: {
-          x: {
-            type: 'linear',
-            position: 'bottom',
-            min: 0,
-          },
-          y: {
-            type: 'linear',
-            position: 'top', 
-            reverse: true,
-          }
-        },
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                const eventInfo = data[`${context.parsed.x}_${context.parsed.y}`];
-                const eventCount = eventInfo.count;
-                const eventTypes = eventInfo.events.join(', ');
+    const image = new Image(); // Creare un oggetto immagine
+    image.src = 'sfondobubble.png';
 
-               return `Eventi: ${eventCount}\nTipo:${eventTypes.replace(/, /g, '\n')}`;
-              }
+    image.onload = function () {
+      new Chart(ctx, {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: `Eventi - \n ${url} \n(${urlData[url].count} eventi)`,
+            data: bubbleData,
+            pointBackgroundColor: bubbleData.map(item => item.backgroundColor),
+            pointRadius: bubbleData.map(item => item.r),
+          }]
+        },
+        options: {
+          scales: {
+            x: {
+              type: 'linear',
+              position: 'bottom',
+              min: 0,
+            },
+            y: {
+              type: 'linear',
+              position: 'top',
+              reverse: true,
             }
+          },
+          plugins: {
+            beforeDraw: chart => {
+              ctx.drawImage(image, chart.chartArea.left * 1.3, chart.chartArea.top * 1.3, chart.chartArea.width, chart.chartArea.height);
+            },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const eventInfo = data[`${context.parsed.x}_${context.parsed.y}`];
+                  const eventCount = eventInfo.count;
+                  const eventTypes = eventInfo.events.join(', ');
+
+                  return `Eventi: ${eventCount}\nTipo:${eventTypes.replace(/, /g, '\n')}`;
+                }
+              }
+            },
           }
         }
-      }
-    });
+      });
+    };
   });
 }
-
- 
