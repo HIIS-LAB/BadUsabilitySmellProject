@@ -108,8 +108,8 @@ function chiamataFiltri(url) {
     });
 }
 
-// formatta data
-function formattaStartEnd(dataOra) {
+// formatta data per la tabella + riepilogo 
+function formattaDataOra(dataOra,formato,colore) {
   const data = new Date(dataOra);
 
 const giorno = data.getDate();
@@ -121,10 +121,17 @@ const minuti = data.getMinutes();
 const secondi = data.getSeconds();
 const millisecondi = data.getMilliseconds();
 
-const dataFormattata = `<span style="color: red;">DAY: </span>${aggiungiZero(giorno)}-${aggiungiZero(mese)}-${anno}`;
-const oraFormattata = `<span style="color: red;">TIME:</span>${aggiungiZero(ore)}:${aggiungiZero(minuti)}:${aggiungiZero(secondi)}.${millisecondi}`;
+const coloreStile = colore ? `style="color: ${colore};"` : '';
+const dataFormattata = `<span ${coloreStile}>DAY: </span>${aggiungiZero(giorno)}-${aggiungiZero(mese)}-${anno}`;
+  const oraFormattata = `<span ${coloreStile}>TIME:</span>${aggiungiZero(ore)}:${aggiungiZero(minuti)}:${aggiungiZero(secondi)}.${millisecondi}`;
 
-return `${dataFormattata}<br>${oraFormattata}`;
+  if (formato === 'tabella') {
+    return `${dataFormattata}<br>${oraFormattata}`;
+  } else if (formato === 'riepilogo') {
+    return `${dataFormattata} ${oraFormattata}`;
+  } else {
+    return 'Formato non supportato';
+  }
 }
 
 function aggiungiZero(numero) {
@@ -147,8 +154,8 @@ function creaTabella(sessioni) {
 
       row.innerHTML =
         `<td>${sessione.idsessione}</td>
-         <td>${formattaStartEnd(sessione.start)}</td>
-         <td>${formattaStartEnd(sessione.end)}</td>
+        <td>${formattaDataOra(sessione.start, 'tabella', 'red')}</td>
+        <td>${formattaDataOra(sessione.end, 'tabella', 'red')}</td>
          <td>${sessione.sessionTime}</td>
          <td>${sessione.itemsEventi}</td>
          <td></td>
@@ -163,7 +170,7 @@ function creaTabella(sessioni) {
 
       const timelineCell = row.querySelector('td:last-child');
       const timelineContainer = document.createElement('div');
-      timelineCell.appendChild(creaButtonGRAFICI(sessione));
+      timelineCell.appendChild(creaButtonANALISI(sessione));
       timelineCell.appendChild(timelineContainer);
     });
     }else{
@@ -172,9 +179,6 @@ function creaTabella(sessioni) {
 
   }
   }
-
-  
-  
 
 // Formattazione eventi
 function formattaEventi(eventi) {
@@ -223,8 +227,6 @@ function creaButton(sessione, eventsContainer) {
 // Toggle 
 function toggleEventi(sessione, eventsContainer, button) {
   const eventsVisible = eventsContainer.innerHTML.trim() !== '';
-
-
   if (eventsVisible) {
     nascondiEventi(eventsContainer, button);
   } else {
@@ -267,22 +269,21 @@ function espandiTabella() {
     });
     button.innerText = 'Espandi tabella';
   }
-
   tabellaEspansa = !tabellaEspansa;
 }
 
 
 
 //creazione button "analisi sessione"
-function creaButtonGRAFICI(sessione) {
+function creaButtonANALISI(sessione) {
   const button = document.createElement('button');
   button.innerText = 'Analisi sessione';
   button.classList.add('btn', 'btn-primary', 'm-2');
   button.addEventListener('click', (event) => {
-    const existingDiv = document.getElementById('graphContainer_' + sessione.idsessione);
+    const existingDiv = document.getElementById('analisiContainer_' + sessione.idsessione);
 
     if (existingDiv) {
-      existingDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      existingDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
       creaDiv(sessione, event);
     }
@@ -292,9 +293,10 @@ function creaButtonGRAFICI(sessione) {
 }
 
 
-//crea DIV (riepilogo + smell)
+
+//crea DIV 
 function creaDiv (sessione,event) {
-  const existingDiv = document.getElementById('graphContainer_' + sessione.idsessione);
+  const existingDiv = document.getElementById('analisiContainer_' + sessione.idsessione);
 
   if (existingDiv) {
     
@@ -303,39 +305,21 @@ function creaDiv (sessione,event) {
   }
 
   const newDiv = document.createElement('div');
-  newDiv.id = 'graphContainer_' + sessione.idsessione;
+  newDiv.id = 'analisiContainer_' + sessione.idsessione;
   newDiv.style.backgroundColor= "white"
   newDiv.style.marginLeft='5%'
   newDiv.style.width = '90%'; 
   newDiv.style.height = 'auto'; 
-  
-  //newDiv.style.margin = '5% auto'; 
-
-  
   newDiv.classList.add('graph-container');
+
   Chiudi(newDiv)
 
-/*const divSMELL= document.createElement('div');
-divSMELL.style.marginLeft= '50%';
-newDiv.appendChild(divSMELL);
-
-const buttonSMELL= document.createElement('button');
-buttonSMELL.innerText = 'Usability bad smell detector';
-buttonSMELL.classList.add('btn', 'btn-primary', 'm-2');
-buttonSMELL.addEventListener('click', (event) => {
-
-divSMELL.innerHTML= ` USABILITY BAD SMELL N.1: "Too Close Element"`
-
-});
-divSMELL.appendChild(buttonSMELL);*/
-
   const riepilogo = document.createElement('div');
-  
   riepilogo.innerHTML = `
-    <h3>RIEPILOGO SESSIONE</h3>
+    <h3>ANALISI SESSIONE</h3>
     <p>Session ID: ${sessione.idsessione}</p>
-    <p>Data inizio: ${sessione.start}</p>
-    <p>Data fine: ${sessione.end}</p>
+    <p>Data inizio: ${formattaDataOra(sessione.start, 'riepilogo')}</p>
+    <p>Data fine: ${formattaDataOra(sessione.end, 'riepilogo')}</p>
     <p>Durata: ${sessione.sessionTime} minuti</p>
     <p>Numero eventi: ${sessione.itemsEventi}</p>
   `;
@@ -347,40 +331,149 @@ divSMELL.appendChild(buttonSMELL);*/
   riepilogo.style.paddingBottom='1%'
   riepilogo.style.paddingRight='1%'
   riepilogo.style.paddingLeft='1%'
-
   newDiv.appendChild(riepilogo);
 
   document.body.appendChild(newDiv); 
 
-  
-  creaTimeline(sessione,event, newDiv);
-  creaDonut(sessione,event,newDiv);
-  creaBarre(sessione,event,newDiv); 
-  creaMap(sessione,event,newDiv); 
-  
-  newDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  return newDiv;
 
+  //button grafici
+  const buttonGRAFICI= document.createElement('button')
+  buttonGRAFICI.innerText = 'Visualizza grafici';
+  buttonGRAFICI.classList.add('btn', 'btn-primary', 'm-2');
+  buttonGRAFICI.addEventListener('click', (event) => {
+    const existingDiv = document.getElementById('divGraph_' + sessione.idsessione);
+
+    if (existingDiv) {
+      existingDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      creaDivGrafici (sessione,event,newDiv);
+    }
+})
+  newDiv.appendChild(buttonGRAFICI);
+  
+
+//button smell
+const buttonSMELL= document.createElement('button');
+buttonSMELL.innerText = 'Usability bad smell detector';
+buttonSMELL.classList.add('btn', 'btn-primary', 'm-2');
+buttonSMELL.addEventListener('click', (event) => {
+  const existingDiv = document.getElementById('divSmell' + sessione.idsessione);
+
+    if (existingDiv) {
+      existingDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      creaDivSmell(newDiv,sessione);  
+    }
+  });
+newDiv.appendChild(buttonSMELL);
+
+newDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+return newDiv;
+}
+// FINE DIV GRANDE 
+
+
+//div grafici
+function creaDivGrafici (sessione, event,newDiv) {
+  const existingDiv = document.getElementById('divGraph' + sessione.idsessione);
+
+  if (existingDiv) {
+    existingDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return existingDiv;
+  }
+
+  const divGraph= document.createElement('div');
+  divGraph.id = 'divGraph' + sessione.idsessione;
+  divGraph.style.backgroundColor= 'lightblue';
+  newDiv.appendChild(divGraph);
+  chiudiGRAFICI(divGraph)
+  creaTimeline(sessione,event, divGraph);
+  creaDonut(sessione,event,divGraph);
+  creaBarre(sessione,event,divGraph); 
+  creaMap(sessione,event,divGraph); 
+
+  divGraph.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+return divGraph;
 }
 
-//RIEPILOGO
-function riepilogo(){
+//chiudi grafici 
+function chiudiGRAFICI(divGraph) {
+  const closeButtonGraph= document.createElement('button');
+  closeButtonGraph.innerText= 'Chiudi';
+  closeButtonGraph.style.border= 'solid'; 
+  closeButtonGraph.style.paddingTop='0.5%';
+  closeButtonGraph.style.paddingBottom='0.5%'
+  closeButtonGraph.style.paddingLeft='0.5%'
+  closeButtonGraph.style.paddingRight='0.5%'
+  closeButtonGraph.style.color='red';
+  closeButtonGraph.style.marginLeft= '93%'
   
+  closeButtonGraph.addEventListener('click', () => {
+    divGraph.remove();
+  });
+  divGraph.appendChild(closeButtonGraph); ;
 }
 
-//Chiudi DIV
+//div smell (dopo button)
+function creaDivSmell(newDiv,sessione) {
+  const existingDiv = document.getElementById('divSmell' + sessione.idsessione);
+
+  if (existingDiv) {
+    existingDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return existingDiv;
+  }
+
+ const divSmell= document.createElement ('div')
+ divSmell.id = 'divSmell' + sessione.idsessione;
+ divSmell.style.backgroundColor= 'lightgrey'
+ divSmell.innerHTML = `
+ <h3>USABILITY BAD SMELL</h3>
+ <p>Smell 1: Too small or close elements</p>
+ <p>Smell 2: Too close links </p>
+ <p>Smell 3: Distant content </p>
+ <p>Smell 4: Too small section </p>
+ <p>Smell 5: Long forms </p>
+`;
+ newDiv.appendChild(divSmell)
+ chiudiSMELL(divSmell); 
+
+ divSmell.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+return divSmell;
+}
+
+//chiudi smell
+function chiudiSMELL(divSmell) {
+  const closeButtonSmell= document.createElement('button');
+  closeButtonSmell.innerText= 'Chiudi';
+  closeButtonSmell.style.border= 'solid'; 
+  closeButtonSmell.style.paddingTop='0.5%';
+  closeButtonSmell.style.paddingBottom='0.5%'
+  closeButtonSmell.style.paddingLeft='0.5%'
+  closeButtonSmell.style.paddingRight='0.5%'
+  closeButtonSmell.style.color='red';
+  closeButtonSmell.style.marginLeft= '93%'
+  
+  closeButtonSmell.addEventListener('click', () => {
+    divSmell.remove();
+  });
+  divSmell.appendChild(closeButtonSmell); ;
+}
+
+//Chiudi DIV grande
 function Chiudi(newDiv) {
 const closeButton = document.createElement('button');
 closeButton.innerText = 'Chiudi';
-//closeButton.classList.add('btn', 'btn-secondary', 'm-2');
-  closeButton.innerText = 'Chiudi';
-  closeButton.style.color='black';
+  closeButton.style.border= 'solid'; 
+  closeButton.style.paddingTop='0.5%';
+  closeButton.style.paddingBottom='0.5%'
+  closeButton.style.paddingLeft='0.5%'
+  closeButton.style.paddingRight='0.5%'
+  closeButton.style.color='red';
   closeButton.style.float="right";
-  closeButton.style.top='-20px'
-
-  //closeButton.style.marginLeft='90%'
-  //closeButton.style.marginTop='-110%'
-  
+  closeButton.style.top='-20px' 
   closeButton.addEventListener('click', () => {
     newDiv.remove();
   });
@@ -388,6 +481,7 @@ closeButton.innerText = 'Chiudi';
   newDiv.appendChild(closeButton);
 }
 
+////////////////////////////////////////GRAFICI
 //TIMELINE prepara + crea
 function preparaDatiTimeline(eventi) {
   const datasets = [];
@@ -436,6 +530,7 @@ function preparaDatiTimeline(eventi) {
 /////
 function creaTimeline(sessione, event,wrapper) {
   const canvas = document.createElement('canvas');
+  canvas.style.width= "10%"
   canvas.id = 'timelineCanvas';
   wrapper.appendChild(canvas);
 
@@ -738,8 +833,7 @@ function getCoordinates(xpath) {
       return { x: parseFloat(x), y: parseFloat(y) };
     }
   } 
-/// no 00 ma escludi 
-  return { x: 0, y: 0 };
+  return null
 }
 
 
@@ -751,7 +845,11 @@ function creaMap(sessione, event, wrapper) {
   sessione.eventi.forEach(evento => {
     if (evento.xpath && evento.xpath.includes('(') && evento.xpath.includes(')')) {
       var coordinates = getCoordinates(evento.xpath);
-      console.log(`Coordinate originali: x=${coordinates.x}, y=${coordinates.y}`);
+      
+      if(coordinates=== null) {
+        return;
+      }
+      console.log(`Coordinate: x=${coordinates.x}, y=${coordinates.y}`);
 
       const key = evento.url;
       if (!urlData[key]) {

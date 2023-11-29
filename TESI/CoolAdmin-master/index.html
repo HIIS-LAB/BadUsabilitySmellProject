@@ -35,6 +35,7 @@
 
     <!-- Main CSS-->
     <link href="css/theme.css" rel="stylesheet" media="all">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/visualizzazione.js"></script>
     
 </head>
@@ -185,37 +186,32 @@
                         
      <!--GRAFICO TORTA PAGINE VISUALIZZATE DAS-->
                         
-    <div class="col-lg-6">
-        <div class="au-card chart-percent-card">
-                <h3 class="title-2 tm-b-5"> Percentuali pagine visitate:</h3>
-                    <div class="chart-note-wrap">   
+    
+        <div style="margin: 0 auto; width: 80%; background-color: white;">
+                <h3> Percentuali pagine visitate:</h3>
+                    <div>   
                     <ul>  <li>   <span>Fai click sul grafico per visualizzare le percentuali</span>  </li>
                     <li>  <span>Fai click sull'URL che vuoi escludere dal grafico</span>  </li>  </ul>
                     </div>
                                             
-                 <div class="recent-report__chart">
+                 <div>
                     <canvas id="pageUsageChart"></canvas>
                 </div> 
         </div>
- </div>
+ 
 
 
- <!--GRAFICO SESSIONI X GIORNO (BARCHART) DAS-->
-                        
- <div class="col-lg-6">
-    <div class="au-card chart-percent-card">
-            <h3 class="title-2 tm-b-5"> Numero di sessioni in base al giorno:</h3>
-                <div class="chart-note-wrap">   
-                <ul>  <li>   <span>Fai click sul grafico per visualizzare i dati precisi</span>  </li>
-                
-                </div>
-                                        
-             <div class="recent-report__chart">
-                <canvas id="sessionDayChart"></canvas>
-            </div> 
-    </div>
-</div>
+ <!--GRAFICO SESSIONI X GIORNO (BARCHART) -->
+                        <div style="margin: 0 auto; width: 80%; background-color: white;">
+                <h3> Rapporto giorno/sessioni:</h3>
+                          
+                 <div>
+                    <canvas id="sessionDayChart"></canvas>
+                </div> 
+        </div>
+ 
 
+ 
 <!--TABELLA ULTIME 10 SESSIONI--> 
      <!--<div class="row">
         <div class="col-lg-9">

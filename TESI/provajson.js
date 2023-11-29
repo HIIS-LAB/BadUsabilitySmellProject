@@ -130,7 +130,7 @@ function getTimestamp() {
   }
  
 
-//eventi
+//eventi mouse
 settings.events.split(" ").forEach(function(evento) {
     window.addEventListener(evento, function(event) {
         console.log("Evento rilevato: " + event.type);

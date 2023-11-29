@@ -100,6 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function createPieChart(data) {
+      
+
       const ctx = document.getElementById('pageUsageChart').getContext('2d');
       const chart = new Chart(ctx, {
         type: 'pie',
@@ -110,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         'red','blue','green','purple','yellow','orange','black','pink','brown']}],
               },
           options: { legend: {
-                            position: 'left', 
+                            position: 'top', 
                             align: 'start',    
                    }},
         });
