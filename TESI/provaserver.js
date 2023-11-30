@@ -5,6 +5,8 @@ const server = express();
 const cookieParser= require('cookie-parser'); 
 const port = 8000;
 const moment = require('moment');
+const parser = require('xml2js').parseString;
+const fs = require('fs');
 
 
 //const path= require ('path'); 
@@ -332,6 +334,42 @@ server.get("/sessioni-filtrate", async (req, res) => {
     res.status(500).json({ error: 'Errore interno del server' });
   }
 });
+
+
+//confronto pattern 
+server.get ('/confrontaPattern', (req,res) => {
+  const array= req.query.sessione.eventi;
+  const xml= 'patternsDefinition.xml'
+
+  const xmlData= fs.readFileSync (xml,'utf-8');
+  parser(xmlData, (err, result) => {
+    if (err) {
+        console.error('Errore durante l\'analisi del file XML:', err);
+        res.status(500).send('Errore durante l\'analisi del file XML.');
+        return;
+    }
+
+    const patterns = result.patternsContainer.pattern;
+
+    for (const pattern of patterns) {
+        const patternName = pattern.patternName[0];
+        const patternEvents = pattern.event;
+
+        if (verificaPattern(array, patternEvents)) {
+            res.send(`Il pattern '${patternName}' è presente.`);
+            return;
+        }
+    }
+
+    res.send('Nessun pattern corrispondente trovato.');
+});
+});
+
+
+function verificaPattern(array, pattern) {
+
+}
+
 
 
 

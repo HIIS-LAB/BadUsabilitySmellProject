@@ -385,7 +385,7 @@ function creaDivGrafici (sessione, event,newDiv) {
 
   const divGraph= document.createElement('div');
   divGraph.id = 'divGraph' + sessione.idsessione;
-  divGraph.style.backgroundColor= 'lightblue';
+  divGraph.style.backgroundColor= 'lightgrey';
   newDiv.appendChild(divGraph);
   chiudiGRAFICI(divGraph)
   creaTimeline(sessione,event, divGraph);
@@ -408,7 +408,7 @@ function chiudiGRAFICI(divGraph) {
   closeButtonGraph.style.paddingLeft='0.5%'
   closeButtonGraph.style.paddingRight='0.5%'
   closeButtonGraph.style.color='red';
-  closeButtonGraph.style.marginLeft= '93%'
+  closeButtonGraph.style.marginLeft= '95%'
   
   closeButtonGraph.addEventListener('click', () => {
     divGraph.remove();
@@ -425,21 +425,42 @@ function creaDivSmell(newDiv,sessione) {
     return existingDiv;
   }
 
+  //div smell grande
+ const divDetectorSmell=document.createElement('div'); 
+ divDetectorSmell.id = 'divDetectorSmell' + sessione.idsessione;
+ divDetectorSmell.style.backgroundColor= 'lightgrey'
+ divDetectorSmell.style.paddingBottom='2%';
+ newDiv.appendChild(divDetectorSmell); 
+ chiudiSMELL(divDetectorSmell); 
+
+// scritte smell
  const divSmell= document.createElement ('div')
  divSmell.id = 'divSmell' + sessione.idsessione;
- divSmell.style.backgroundColor= 'lightgrey'
  divSmell.innerHTML = `
- <h3>USABILITY BAD SMELL</h3>
- <p>Smell 1: Too small or close elements</p>
- <p>Smell 2: Too close links </p>
- <p>Smell 3: Distant content </p>
- <p>Smell 4: Too small section </p>
- <p>Smell 5: Long forms </p>
+ <h3> Pattern</h3>
+ <p>Bad Usability Smell 1: Too small or close elements</p>
+ <p>Bad Usability Smell 2: Too close links </p>
+ <p>Bad Usability Smell 3: Distant content </p>
+ <p>Bad Usability Smell 4: Too small section </p>
+ <p>Bad Usability Smell 5: Bad readability</p>
+ <p>Bad Usability Smell 6: Long forms</p>
 `;
- newDiv.appendChild(divSmell)
- chiudiSMELL(divSmell); 
 
+divSmell.style.marginLeft='2%';
+divSmell.style.paddingTop='5%';
+ divDetectorSmell.appendChild(divSmell)
  divSmell.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+ // button cerca smell 
+const buttonCercaSmell= document.createElement('button');
+buttonCercaSmell.innerText = 'Cerca nella sessione';
+buttonCercaSmell.classList.add('btn', 'btn-secondary', 'm-2');
+buttonCercaSmell.addEventListener('click', (event) => {
+
+ cercaPattern (sessione,divDetectorSmell)
+  });
+divDetectorSmell.appendChild(buttonCercaSmell);
+
 
 return divSmell;
 }
@@ -454,7 +475,10 @@ function chiudiSMELL(divSmell) {
   closeButtonSmell.style.paddingLeft='0.5%'
   closeButtonSmell.style.paddingRight='0.5%'
   closeButtonSmell.style.color='red';
-  closeButtonSmell.style.marginLeft= '93%'
+  //closeButtonSmell.style.marginLeft= '95%'
+  closeButtonSmell.style.float="right";
+  
+ 
   
   closeButtonSmell.addEventListener('click', () => {
     divSmell.remove();
@@ -473,7 +497,6 @@ closeButton.innerText = 'Chiudi';
   closeButton.style.paddingRight='0.5%'
   closeButton.style.color='red';
   closeButton.style.float="right";
-  closeButton.style.top='-20px' 
   closeButton.addEventListener('click', () => {
     newDiv.remove();
   });
@@ -530,7 +553,7 @@ function preparaDatiTimeline(eventi) {
 /////
 function creaTimeline(sessione, event,wrapper) {
   const canvas = document.createElement('canvas');
-  canvas.style.width= "10%"
+  canvas.style.width= "100%"
   canvas.id = 'timelineCanvas';
   wrapper.appendChild(canvas);
 
@@ -942,4 +965,30 @@ function creaMap(sessione, event, wrapper) {
       });
     };
   });
+}
+
+
+//CHIAMATA SMELL 
+function cercaPattern (sessione,divDetectorSmell) {
+  const queryString = `id=${encodeURIComponent(sessione._id)}&start=${encodeURIComponent(sessione.start)}&end=${encodeURIComponent(sessione.end)}`;
+  sessione.eventi.forEach((evento, index) => {
+    queryString += `&eventi[${index}][type]=${encodeURIComponent(evento.type)}&eventi[${index}][xpath]=${encodeURIComponent(evento.xpath)}&eventi[${index}][url]=${encodeURIComponent(evento.url)}&eventi[${index}][time]=${encodeURIComponent(evento.time)}`;
+  });
+
+  const url = `http://localhost:8000/confrontaPattern${queryString}`;
+  
+    fetch (url, {
+    method: 'GET',
+    mode: 'cors',
+    credentials: 'same-origin',
+  })
+  .then (response=> response.json())
+  .then (data => {
+    console.log ('ok')
+    })
+
+  .catch(error => {
+    console.error('Errore nella chiamata al server:', error);
+  });
+
 }
