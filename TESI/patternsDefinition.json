@@ -1,0 +1,25 @@
+{
+    "Pattern 1": {
+        "title": "TooSmallOrCloseElements",
+        "event1": {
+            "type": "pinchout", 
+            "interval": "PT1S"
+        }, 
+        "event2": {
+            "type": "pan", 
+            "interval":"PT1S"
+        }, 
+        "event3": {
+            "type": "tap",
+            "repetition": "1", 
+            "interval": "PTS2"
+        },
+        "event4": {
+            "type": "focusin",
+            "repetition": "1",
+            "interval": "PT1S" 
+        }
+    }
+
+    
+}

@@ -970,13 +970,10 @@ function creaMap(sessione, event, wrapper) {
 
 //CHIAMATA SMELL 
 function cercaPattern (sessione,divDetectorSmell) {
-  const queryString = `id=${encodeURIComponent(sessione._id)}&start=${encodeURIComponent(sessione.start)}&end=${encodeURIComponent(sessione.end)}`;
-  sessione.eventi.forEach((evento, index) => {
-    queryString += `&eventi[${index}][type]=${encodeURIComponent(evento.type)}&eventi[${index}][xpath]=${encodeURIComponent(evento.xpath)}&eventi[${index}][url]=${encodeURIComponent(evento.url)}&eventi[${index}][time]=${encodeURIComponent(evento.time)}`;
-  });
+  const eventiJson= JSON.stringify(sessione.eventi); 
+ 
+  const url = `http://localhost:8000/confrontaPattern?eventi=${encodeURIComponent(eventiJson)}`;
 
-  const url = `http://localhost:8000/confrontaPattern${queryString}`;
-  
     fetch (url, {
     method: 'GET',
     mode: 'cors',
@@ -990,5 +987,4 @@ function cercaPattern (sessione,divDetectorSmell) {
   .catch(error => {
     console.error('Errore nella chiamata al server:', error);
   });
-
 }

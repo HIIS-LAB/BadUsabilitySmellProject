@@ -1,11 +1,11 @@
-const express = require('express');
+const express= require('express');
 const cors= require ('cors')
 const bodyParser = require('body-parser');
 const server = express();
 const cookieParser= require('cookie-parser'); 
 const port = 8000;
 const moment = require('moment');
-const parser = require('xml2js').parseString;
+const { Parser } = require('xml2js');
 const fs = require('fs');
 
 
@@ -338,11 +338,11 @@ server.get("/sessioni-filtrate", async (req, res) => {
 
 //confronto pattern 
 server.get ('/confrontaPattern', (req,res) => {
-  const array= req.query.sessione.eventi;
-  const xml= 'patternsDefinition.xml'
+  const eventi= JSON.parse (req.query.eventi);
+  const xmlData = fs.readFileSync('patternsDefinition.xml', 'utf-8');
 
-  const xmlData= fs.readFileSync (xml,'utf-8');
-  parser(xmlData, (err, result) => {
+
+  Parser(xmlData, (err, result) => {
     if (err) {
         console.error('Errore durante l\'analisi del file XML:', err);
         res.status(500).send('Errore durante l\'analisi del file XML.');
@@ -350,25 +350,106 @@ server.get ('/confrontaPattern', (req,res) => {
     }
 
     const patterns = result.patternsContainer.pattern;
+    const risultati= [];
 
-    for (const pattern of patterns) {
-        const patternName = pattern.patternName[0];
-        const patternEvents = pattern.event;
+    patterns.forEach(pattern => {
+      const patternName= pattern.patternName; 
+      const eventsInPattern= pattern.event; 
 
-        if (verificaPattern(array, patternEvents)) {
-            res.send(`Il pattern '${patternName}' è presente.`);
-            return;
+
+      let patternTrovato= true; 
+
+      eventsInPattern.forEach(xmlEvent => {
+        const eventTitle = xmlEvent.eventTitle[0];
+        const direction = xmlEvent.direction[0];
+        const repnumber = xmlEvent.repnumber[0];
+        const interval = xmlEvent.interval[0];
+
+        const eventTrovato= verificaPattern(eventi, {eventTitle, direction, repnumber,interval})
+
+        if(!eventTrovato) {
+          patternTrovato= false; 
+          return;
         }
+    })
+
+    if (patternTrovato) {
+      risultati.push(`Pattern "${patternName}" rilevato`);
+    } else {
+      risultati.push(`Pattern "${patternName}" non rilevato`);
+    }
+});
+res.status(200).json({ risultati });
+});
+})
+
+
+function verificaPattern (eventi, xmlPattern) {
+  const eventTitleXML = xmlPattern.eventTitle;
+  const directionXML = xmlPattern.direction;
+  const repnumberXML = xmlPattern.repnumber;
+  const intervalloTempoXML = parseDuration(xmlPattern.interval);
+
+  let eventoTrovato = false;
+  let count=0; 
+
+  eventi.forEach(evento =>{
+    if (directionXML !== '$') {
+      const typeDirection = eventTitleXML + directionXML;
+      if (evento.type === typeDirection) {
+        eventoTrovato= true; 
+        return;
+      }
+    } else {
+      if (evento.type !== eventTitleXML) {
+        return; 
+      }
+    }
+  
+    if (repnumberXML !== '*') {
+      const numeroRepEventi = contaRep (eventi,evento,eventTitleXML);
+      if (parseInt (repnumberXML, 10) !== numeroRepEventi) {
+        return 
+      }
     }
 
-    res.send('Nessun pattern corrispondente trovato.');
-});
-});
+    const index= eventi.indexOf(evento);
+    if (index > 0) {
+      const tempoPrecedente= moment (eventi[index-1].time);
+      const tempoCorrente= moment (evento.time);
+      const intervalloTempoAttuale= tempoCorrente.diff(tempoPrecedente);
 
-
-function verificaPattern(array, pattern) {
-
+      if (intervalloTempoAttuale !== intervalloTempoXML) {
+        return;
+      }
+    }
+    eventoTrovato=true; 
+  });
+  return eventoTrovato;
 }
+
+
+function contaRep (eventi,eventoCorrente,type) {
+  let count = 0; 
+  const index= eventi.indexOf(eventoCorrente);
+
+  for (let i = index - 1; i >= 0; i--) {
+    if (eventi[i].type === type) {
+      count++;
+    } else {
+      break; 
+    }
+  }
+  for (let i = index + 1; i < eventi.length; i++) {
+    if (eventi[i].type === type) {
+      count++;
+    } else {
+      break; 
+    }
+  }
+  return count;
+}
+
 
 
 
