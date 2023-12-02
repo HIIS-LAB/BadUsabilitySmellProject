@@ -981,7 +981,7 @@ function cercaPattern (sessione,divDetectorSmell) {
   })
   .then (response=> response.json())
   .then (data => {
-    console.log ('ok')
+    console.log (data)
     })
 
   .catch(error => {

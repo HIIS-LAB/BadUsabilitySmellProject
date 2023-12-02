@@ -1,7 +1,12 @@
+var scriptElement = document.createElement('script');
+scriptElement.src = 'https://cdnjs.cloudflare.com/ajax/libs/zingtouch/1.0.6/zingtouch.js'
+document.head.appendChild(scriptElement);
 
+scriptElement.onload= function () {
 var settings = {
      "events": "blur focus focusin focusout load resize scroll unload beforeunload click dblclick mousedown mouseover mouseout mouseenter mouseleave change select submit keypress keydown keyup error popstate",
-    "touchevents": "touchstart touchend touchcancel gesturestart gesturechange gestureend touchmove pinchout pan tap"
+    "touchevents": "touchstart touchend touchcancel gesturestart gesturechange gestureend touchmove",
+     "zingevents": "tap pan pinch swipe rotate"
 };
 
 let eventiCorrenti= []; 
@@ -33,7 +38,7 @@ async function DatiPost(url, data) {
     if (datiRisposta.sessionID) {
    idsessione = datiRisposta.sessionID; 
    console.log ("IDsessione dal server", idsessione)
-   document.cookie= "id_sessione=" + idsessione+ "SameSite=Strict"; 
+   document.cookie= "id_sessione=" + idsessione+ "SameSite=Strict; Secure"; 
     }
     if (datiRisposta.message){
         console.log (datiRisposta.message)
@@ -145,7 +150,7 @@ settings.events.split(" ").forEach(function(evento) {
 });
 
 
-//eventi touch 
+//eventi touch standard
 settings.touchevents.split(" ").forEach(function(evento) {
     window.addEventListener(evento, function(event) {
         console.log("Evento touch rilevato: " + event.type);
@@ -156,8 +161,41 @@ settings.touchevents.split(" ").forEach(function(evento) {
 
         aggiungiEvento(event.type,xpathWithCoordinates); 
         gestisciEventi (event); 
-    });
+    }, { passive: false}) ;
 }); 
+
+//evento BEFOREUNLOAD 
+window.addEventListener ('beforeunload', function (event) {
+    var message= 'Sei sicuro di voler abbandonare la pagina?';
+    event.returnValue = message; 
+    var elemento= event.target;
+        var coordinates = calculateCoordinates(elemento);
+        const xpathWithCoordinates = getXPath(elemento,coordinates);
+
+        aggiungiEvento (event.type,xpathWithCoordinates); 
+        gestisciEventi (event); 
+    return message; 
+}); 
+
+
+//eventi Zing 
+settings.zingevents.split (" ").forEach (function (evento){
+    var touchRegion = new ZingTouch.Region(document.body);
+    touchRegion.bind(document.body, evento, function(event) {
+        console.log("Evento touch rilevato: " + evento);
+
+        var elemento= event.detail.events[0].target;
+        var coordinates = calculateCoordinates(elemento);
+
+        const xpathWithCoordinates = getXPath(elemento, coordinates);
+
+        aggiungiEvento(event.type,xpathWithCoordinates); 
+        gestisciEventi (event); 
+}, { passive: false });
+})
+
+
+
 
 
 function gestisciEventi (event) {
@@ -234,11 +272,9 @@ function gestisciEventi (event) {
     function calculateCoordinates(element) {
 
         if (!element || typeof element.getBoundingClientRect !== 'function') {
-            console.log("Elemento non valido o manca il metodo getBoundingClientRect");
             return "(undefined, undefined)";
         } else if (element.id) {
             const rect = element.getBoundingClientRect();
-            console.log("Coordinate rettangolo:", rect);
             return `(${rect.left + window.scrollX + rect.width / 2}, ${rect.top + window.scrollY + rect.height / 2})`;
         } else {
             const rect = element.getBoundingClientRect();
@@ -255,4 +291,4 @@ function aggiungiEvento (event,xpathWithCoordinates) {
         time: getTimestamp()
 });
 }
-
+}
