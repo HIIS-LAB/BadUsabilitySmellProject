@@ -1,5 +1,6 @@
 var scriptElement = document.createElement('script');
-scriptElement.src = 'https://cdnjs.cloudflare.com/ajax/libs/zingtouch/1.0.6/zingtouch.js'
+scriptElement.src= 'https://cdn.jsdelivr.net/npm/zingtouch@latest/dist/zingtouch.min.js';
+scriptElement.defer = true; 
 document.head.appendChild(scriptElement);
 
 scriptElement.onload= function () {
@@ -161,7 +162,7 @@ settings.touchevents.split(" ").forEach(function(evento) {
 
         aggiungiEvento(event.type,xpathWithCoordinates); 
         gestisciEventi (event); 
-    }, { passive: false}) ;
+    });
 }); 
 
 //evento BEFOREUNLOAD 
@@ -178,25 +179,44 @@ window.addEventListener ('beforeunload', function (event) {
 }); 
 
 
-//eventi Zing 
-settings.zingevents.split (" ").forEach (function (evento){
+//eventi libreria zingTouch
+var lastTapTime = 0;
+var doubleTapThreshold = 200;
+
+settings.zingevents.split(" ").forEach(function (evento) {
     var touchRegion = new ZingTouch.Region(document.body);
-    touchRegion.bind(document.body, evento, function(event) {
+    touchRegion.bind(document.body, evento, function (event) {
         console.log("Evento touch rilevato: " + evento);
+        
+        var touch = event.detail.events[0];
+        var elemento = document.elementFromPoint(touch.x, touch.y);
 
-        var elemento= event.detail.events[0].target;
+        if (!elemento) {
+            console.log("Elemento non definito per l'evento: " + evento);
+            return;
+        }
+
         var coordinates = calculateCoordinates(elemento);
-
         const xpathWithCoordinates = getXPath(elemento, coordinates);
 
-        aggiungiEvento(event.type,xpathWithCoordinates); 
-        gestisciEventi (event); 
-}, { passive: false });
-})
-
-
-
-
+        if (evento !== "tap") {
+            aggiungiEvento(evento, xpathWithCoordinates);
+            gestisciEventi(event);
+        } else {
+            var now = new Date().getTime();
+            var timeDiff = now - lastTapTime;
+            if (timeDiff < doubleTapThreshold) {
+                console.log("Evento touch rilevato: doubletap");
+                aggiungiEvento("doubletap", xpathWithCoordinates);
+                gestisciEventi(event);
+            } else {
+                lastTapTime = now;
+                aggiungiEvento(evento, xpathWithCoordinates);
+                gestisciEventi(event);
+            }
+        }
+    });
+});
 
 function gestisciEventi (event) {
     if (!primoEvento) {
@@ -283,12 +303,19 @@ function gestisciEventi (event) {
     }
         
           
-function aggiungiEvento (event,xpathWithCoordinates) {
-    eventiCorrenti.push({
-        type:event,
-        xpath:xpathWithCoordinates,
-        url: window.location.href,
-        time: getTimestamp()
-});
-}
+    function aggiungiEvento(event, xpathWithCoordinates) {
+        let direction = '$';
+    
+        if (event.detail && event.detail.events && event.detail.events[0]) {
+            direction = event.detail.events[0].currentDirection || '$';
+        }
+    
+        eventiCorrenti.push({
+            type: event,
+            xpath: xpathWithCoordinates,
+            url: window.location.href,
+            time: getTimestamp(),
+            direction: direction
+        });
+    }
 }
