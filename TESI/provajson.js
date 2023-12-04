@@ -144,8 +144,9 @@ settings.events.split(" ").forEach(function(evento) {
         var elemento= event.target;
         var coordinates = calculateCoordinates(elemento);
         const xpathWithCoordinates = getXPath(elemento,coordinates);
+        var direction= '$';
 
-        aggiungiEvento (event.type,xpathWithCoordinates); 
+        aggiungiEvento (event.type,xpathWithCoordinates,direction); 
         gestisciEventi (event); 
     });
 });
@@ -157,10 +158,10 @@ settings.touchevents.split(" ").forEach(function(evento) {
         console.log("Evento touch rilevato: " + event.type);
         var elemento= event.target;
         var coordinates = calculateCoordinates(elemento);
-
         const xpathWithCoordinates = getXPath(elemento, coordinates);
+        var direction= '$'; 
 
-        aggiungiEvento(event.type,xpathWithCoordinates); 
+        aggiungiEvento(event.type,xpathWithCoordinates,direction); 
         gestisciEventi (event); 
     });
 }); 
@@ -172,8 +173,9 @@ window.addEventListener ('beforeunload', function (event) {
     var elemento= event.target;
         var coordinates = calculateCoordinates(elemento);
         const xpathWithCoordinates = getXPath(elemento,coordinates);
+        var direction='$';
 
-        aggiungiEvento (event.type,xpathWithCoordinates); 
+        aggiungiEvento (event.type,xpathWithCoordinates,direction); 
         gestisciEventi (event); 
     return message; 
 }); 
@@ -187,9 +189,11 @@ settings.zingevents.split(" ").forEach(function (evento) {
     var touchRegion = new ZingTouch.Region(document.body);
     touchRegion.bind(document.body, evento, function (event) {
         console.log("Evento touch rilevato: " + evento);
-        
+
+        var direction= '$';
         var touch = event.detail.events[0];
         var elemento = document.elementFromPoint(touch.x, touch.y);
+        
 
         if (!elemento) {
             console.log("Elemento non definito per l'evento: " + evento);
@@ -199,22 +203,24 @@ settings.zingevents.split(" ").forEach(function (evento) {
         var coordinates = calculateCoordinates(elemento);
         const xpathWithCoordinates = getXPath(elemento, coordinates);
 
+
         if (evento !== "tap") {
-            aggiungiEvento(evento, xpathWithCoordinates);
+            aggiungiEvento(evento, xpathWithCoordinates, direction);
             gestisciEventi(event);
         } else {
             var now = new Date().getTime();
             var timeDiff = now - lastTapTime;
             if (timeDiff < doubleTapThreshold) {
                 console.log("Evento touch rilevato: doubletap");
-                aggiungiEvento("doubletap", xpathWithCoordinates);
+                aggiungiEvento("doubletap", xpathWithCoordinates,direction);
                 gestisciEventi(event);
             } else {
                 lastTapTime = now;
-                aggiungiEvento(evento, xpathWithCoordinates);
+                aggiungiEvento(evento, xpathWithCoordinates,direction);
                 gestisciEventi(event);
             }
-        }
+        } 
+            
     });
 });
 
@@ -303,13 +309,8 @@ function gestisciEventi (event) {
     }
         
           
-    function aggiungiEvento(event, xpathWithCoordinates) {
-        let direction = '$';
-    
-        if (event.detail && event.detail.events && event.detail.events[0]) {
-            direction = event.detail.events[0].currentDirection || '$';
-        }
-    
+    function aggiungiEvento(event, xpathWithCoordinates,direction) {   
+
         eventiCorrenti.push({
             type: event,
             xpath: xpathWithCoordinates,
