@@ -184,7 +184,7 @@ function creaTabella(sessioni) {
 function formattaEventi(eventi) {
   if (eventi && Array.isArray(eventi) && eventi.length > 0) {
     return eventi.map((evento, index) => {
-      return `<br><span style="color: red;"> ${index} : </span>{type: "${evento.type}",<br>&nbsp;&nbsp;xpath: "${evento.xpath}",<br>&nbsp;&nbsp;url: "${evento.url}",<br>&nbsp;&nbsp;time: "${evento.time}"}<br>`;
+      return `<br><span style="color: red;"> ${index} : </span>{type: "${evento.type}",<br>&nbsp;&nbsp;xpath: "${evento.xpath}",<br>&nbsp;&nbsp;url: "${evento.url}",<br>&nbsp;&nbsp;time: "${evento.time}"},<br>&nbsp;&nbsp;direction: "${evento.direction}"}`;
     }).join('');
   } else {
     return 'Nessun evento disponibile';
@@ -437,7 +437,7 @@ function creaDivSmell(newDiv,sessione) {
  const divSmell= document.createElement ('div')
  divSmell.id = 'divSmell' + sessione.idsessione;
  divSmell.innerHTML = `
- <h3> Pattern</h3>
+ <h3> Patterns</h3>
  <p>Bad Usability Smell 1: Too small or close elements</p>
  <p>Bad Usability Smell 2: Too close links </p>
  <p>Bad Usability Smell 3: Distant content </p>
@@ -970,18 +970,28 @@ function creaMap(sessione, event, wrapper) {
 
 //CHIAMATA SMELL 
 function cercaPattern (sessione,divDetectorSmell) {
-  const eventiJson= JSON.stringify(sessione.eventi); 
- 
-  const url = `http://localhost:8000/confrontaPattern?eventi=${encodeURIComponent(eventiJson)}`;
-
+  const url = 'http://localhost:8000/confrontaPattern';
+  console.log('Prima della chiamata fetch');
     fetch (url, {
-    method: 'GET',
+    method: 'POST',
     mode: 'cors',
     credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json'
+     },
+     body: JSON.stringify({ eventi: sessione.eventi }),
   })
-  .then (response=> response.json())
+  .then (response => {
+    if (!response.ok) {
+      throw new Error (`Errore HTTP. Status:${response.status}`)
+    }
+    return response.json();
+  })
   .then (data => {
     console.log (data)
+    console.log ('tipo dati:', typeof data)
+    console.log('Risultati:', JSON.stringify(data, null, 2));
+   
     })
 
   .catch(error => {

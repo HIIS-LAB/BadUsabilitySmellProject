@@ -6,8 +6,8 @@ document.head.appendChild(scriptElement);
 scriptElement.onload= function () {
 var settings = {
      "events": "blur focus focusin focusout load resize scroll unload beforeunload click dblclick mousedown mouseover mouseout mouseenter mouseleave change select submit keypress keydown keyup error popstate",
-    "touchevents": "touchstart touchend touchcancel gesturestart gesturechange gestureend touchmove",
-     "zingevents": "tap pan pinch swipe rotate"
+    "touchevents": "touchcancel gesturestart gesturechange gestureend",
+     "zingevents": "tap pan swipe rotate"
 };
 
 let eventiCorrenti= []; 
@@ -136,18 +136,45 @@ function getTimestamp() {
   }
  
 
+//EVENTI 
+var initialDistance= 0; 
+var direction= ''; 
 //eventi mouse
 settings.events.split(" ").forEach(function(evento) {
     window.addEventListener(evento, function(event) {
-        console.log("Evento rilevato: " + event.type);
+       
+       
+        if (event.type === 'focusin') {
 
-        var elemento= event.target;
-        var coordinates = calculateCoordinates(elemento);
-        const xpathWithCoordinates = getXPath(elemento,coordinates);
-        var direction= '$';
+            console.log ("Evento rilevato: focusin" )
+            direction= 'in';
+            var elemento= event.target;
+            var coordinates = calculateCoordinates(elemento);
+            const xpathWithCoordinates = getXPath(elemento, coordinates);
+            aggiungiEvento('focus',xpathWithCoordinates,direction); 
+            gestisciEventi (event);
 
-        aggiungiEvento (event.type,xpathWithCoordinates,direction); 
-        gestisciEventi (event); 
+        } else if (event.type === 'focusout') {
+
+            console.log ("Evento rilevato: focusout" )
+            direction='out'; 
+            var elemento= event.target;
+            var coordinates = calculateCoordinates(elemento);
+            const xpathWithCoordinates = getXPath(elemento, coordinates);
+            aggiungiEvento('focus',xpathWithCoordinates,direction); 
+            gestisciEventi (event);
+
+        } else if (event.type !== 'focusin' && event.type !== 'focusout') {
+
+            console.log ("Evento rilevato:" + event.type )
+            direction= '$';
+            var elemento= event.target;
+            var coordinates = calculateCoordinates(elemento);
+            const xpathWithCoordinates = getXPath(elemento, coordinates);
+            aggiungiEvento(event.type,xpathWithCoordinates,direction); 
+            gestisciEventi (event);
+        }
+        
     });
 });
 
@@ -159,12 +186,72 @@ settings.touchevents.split(" ").forEach(function(evento) {
         var elemento= event.target;
         var coordinates = calculateCoordinates(elemento);
         const xpathWithCoordinates = getXPath(elemento, coordinates);
-        var direction= '$'; 
+        direction= '$'; 
 
         aggiungiEvento(event.type,xpathWithCoordinates,direction); 
         gestisciEventi (event); 
     });
 }); 
+
+//evento PINCH 
+window.addEventListener ('touchstart', function (event) {
+    console.log ("Evento touch rilevato: " + event.type)
+   
+    if (event.touches.length >= 2) {
+        var touch1= event.touches[0]; 
+        var touch2= event.touches[1]; 
+        initialDistance= Math.hypot (touch2.clientX - touch1.clientX,touch2.clientY - touch1.clientY )
+    } else {
+        direction= '$'; 
+    }
+        var elemento= event.target;
+        var coordinates = calculateCoordinates(elemento);
+        const xpathWithCoordinates = getXPath(elemento, coordinates);
+        aggiungiEvento(event.type,xpathWithCoordinates,direction); 
+        gestisciEventi (event);
+  })
+
+window.addEventListener('touchmove', function (event) {
+    if (event.touches.length >= 2) {
+      var touch1 = event.touches[0];
+      var touch2 = event.touches[1];
+      var currentDistance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+      var pinchDelta = currentDistance - initialDistance;
+      
+      if (pinchDelta > 0) {
+        direction= 'out'; 
+      } else if (pinchDelta < 0) {
+        direction= 'in'; 
+      } else {
+        direction= '$';
+      }
+      console.log ("Evento touch rilevato: pinch" )
+      var elemento= event.target;
+      var coordinates = calculateCoordinates(elemento);
+      const xpathWithCoordinates = getXPath(elemento, coordinates);
+      aggiungiEvento('pinch',xpathWithCoordinates,direction); 
+      gestisciEventi (event);
+    } else {
+        direction= '$'; 
+        console.log("Evento touch rilevato: " + event.type)
+        var elemento= event.target;
+      var coordinates = calculateCoordinates(elemento);
+      const xpathWithCoordinates = getXPath(elemento, coordinates);
+      aggiungiEvento(event.type,xpathWithCoordinates,direction); 
+      gestisciEventi (event);
+    }
+  });
+
+  window.addEventListener('touchend', function (event) {
+    console.log ("Evento touch rilevato: " + event.type)
+    initialDistance = 0;
+    direction='$'
+    var elemento= event.target;
+    var coordinates = calculateCoordinates(elemento);
+    const xpathWithCoordinates = getXPath(elemento, coordinates);
+    aggiungiEvento(event.type,xpathWithCoordinates,direction); 
+    gestisciEventi (event);
+  });
 
 //evento BEFOREUNLOAD 
 window.addEventListener ('beforeunload', function (event) {
@@ -173,7 +260,7 @@ window.addEventListener ('beforeunload', function (event) {
     var elemento= event.target;
         var coordinates = calculateCoordinates(elemento);
         const xpathWithCoordinates = getXPath(elemento,coordinates);
-        var direction='$';
+        direction='$';
 
         aggiungiEvento (event.type,xpathWithCoordinates,direction); 
         gestisciEventi (event); 
@@ -190,7 +277,7 @@ settings.zingevents.split(" ").forEach(function (evento) {
     touchRegion.bind(document.body, evento, function (event) {
         console.log("Evento touch rilevato: " + evento);
 
-        var direction= '$';
+        direction= '$';
         var touch = event.detail.events[0];
         var elemento = document.elementFromPoint(touch.x, touch.y);
         
@@ -202,9 +289,18 @@ settings.zingevents.split(" ").forEach(function (evento) {
 
         var coordinates = calculateCoordinates(elemento);
         const xpathWithCoordinates = getXPath(elemento, coordinates);
-
-
-        if (evento !== "tap") {
+        
+        if (evento === 'pan') {
+            var currentDirection= event.detail.data[0].currentDirection; 
+            if (currentDirection >= 45 && currentDirection < 135) {
+                direction= "down"; 
+                aggiungiEvento(evento, xpathWithCoordinates, direction);
+                gestisciEventi(event);
+            } else {
+                aggiungiEvento(evento, xpathWithCoordinates, direction);
+                gestisciEventi(event);
+            }
+        } else if (evento !== "tap") {
             aggiungiEvento(evento, xpathWithCoordinates, direction);
             gestisciEventi(event);
         } else {
@@ -223,6 +319,7 @@ settings.zingevents.split(" ").forEach(function (evento) {
             
     });
 });
+
 
 function gestisciEventi (event) {
     if (!primoEvento) {

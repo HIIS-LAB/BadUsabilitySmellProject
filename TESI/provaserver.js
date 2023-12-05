@@ -5,7 +5,7 @@ const server = express();
 const cookieParser= require('cookie-parser'); 
 const port = 8000;
 const moment = require('moment');
-const { Parser } = require('xml2js');
+const { parseString } = require('xml2js');
 const fs = require('fs');
 
 
@@ -335,62 +335,122 @@ server.get("/sessioni-filtrate", async (req, res) => {
   }
 });
 
+
 //BAD SMELL
-server.get ('/confrontaPattern', (req,res) => {
-  const eventi= JSON.parse (req.query.eventi);
-  getDirection (eventi); 
-  res.json(eventi);
-})
+server.post('/confrontaPattern', express.json(), async (req, res) => {
+  try {
+    const eventi = req.body.eventi;
+    console.log ('eventi per smell:', eventi)
+    const risultati= await verificaPattern(eventi);
+    res.json(risultati);
+    console.log ('risultati inviati')
+  } catch (error) {
+        console.error('Errore:', error);
+        res.status(500).send('Errore durante l\'analisi dei pattern.');
+      }
+    });
 
-
-//direzione
-function getDirection (eventi) {
-  eventi.forEach(evento=> {
-    const type = evento.type.toLowerCase();
-    const keys = ['down', 'in', 'out'];
-    
-    if (type.endsWith ('down') || type.endsWith('in') || type.endsWith ('out')) {
-      const direzione = keys.find(valoreType => type.endsWith(valoreType)) ;
-      evento.direction= direzione; 
-      evento.type=type.slice(0, -direzione.length).trim();
-    }else {
-      evento.direction='$';
-    }
-  })
-  return eventi; 
-}
 
 ////funzione CONFRONTO
-/*function verificaPattern (eventi) {
-  const eventi= eventi; 
-  const xml= fs.readFileSync('patternsDefinition.xml', 'utf-8');
-  
-  Parser(xml, (err, result) => {
+function verificaPattern (eventi) {
+  return new Promise((resolve, reject) => {
+    try {
+    const xml = fs.readFileSync('patternsDefinition.xml', 'utf-8');
+    let risultati = {};
+
+  parseString(xml, (err, result) => {
     if (err) {
         console.error('Errore durante l\'analisi del file XML:', err);
         res.status(500).send('Errore durante l\'analisi del file XML.');
         return;
-    }})
+    }
 
     const patterns= result.patternsContainer.pattern;
-    let risultati= []
-    let patternTrovato; 
-    let eventoTrovato; 
-
-    patterns.forEach(pattern =>{
+    
+    patterns.forEach((pattern) =>{
       const patternName= pattern.patternName;
       const eventsiInPattern= pattern.event; 
+      let patternTrovato=true; 
 
       eventsiInPattern.forEach(xmlEvent => {
         const eventTitle = xmlEvent.eventTitle;
-        const direction = xmlEvent.direction;
-        const repnumber = xmlEvent.repnumber;
-        const interval = xmlEvent.interval;
-      })
+        const eventDirection = xmlEvent.direction;
+        const eventRepnumber = xmlEvent.repnumber;
+        const eventInterval = xmlEvent.interval;
+    
+        const matchingEvent = eventi.find((evento) => {
+          return evento.type === eventTitle && evento.direction === eventDirection;
+        });
 
-    })
-}*/
+        if (!matchingEvent) {
+          patternTrovato = false;
+          return;
+        }
+      
+        const interval = creaInterval(eventi, matchingEvent);
+        const repNumber = getRepnumber(eventi, eventi.indexOf(matchingEvent));
 
+        if (interval <= eventInterval && repNumber === eventRepnumber) {
+          patternTrovato= true; 
+        } else {
+          patternTrovato = false;
+        }
+      });
+      risultati[patternName] = patternTrovato;
+
+    });
+    resolve(risultati); 
+})
+    } catch (error) {
+      console.error('Errore durante l\'analisi del file XML:', error);
+      reject('Errore durante l\'analisi del file XML.');
+    }
+})
+}
+
+//INTERVAL
+function creaInterval (eventi,evento) {
+  const index = eventi.indexOf(evento);
+  if (index > 0) {
+    const timeCurrent = evento.time;
+    const timePrecedente = eventi[index - 1].time;
+    const interval = timeCurrent - timePrecedente;
+    return interval;
+  }
+  return 0;
+}
+
+//REPNUMBER
+function getRepnumber (eventi,index) {
+  const typeCurrent= eventi[index].type; 
+  const directionCurrent= eventi[index].direction; 
+  const repNumber= 1; 
+
+   // 4 precedenti 
+  for (let i = index - 1; i >= Math.max(0, index - 4); i--) {
+    const typePrecedente = eventi[i].type;
+    const directionPrecedente = eventi[i].direction;
+
+    if (typeCurrent === typePrecedente && directionCurrent === directionPrecedente) {
+      repNumber++;
+    } else {
+      break;
+    }
+  }
+
+  // 4 successivi 
+  for (let i = index + 1; i <= Math.min(index + 4, eventi.length - 1); i++) {
+    const typeSuccessivo = eventi[i].type;
+    const directionSuccessivo = eventi[i].direction;
+
+    if (typeCurrent === typeSuccessivo && directionCurrent === directionSuccessivo) {
+      repNumber++;
+    } else {
+      break;
+    }
+  }
+  return repNumber; 
+}
 
 server.listen(port, () => {
   console.log(`Server in ascolto sulla porta ${port}`);
