@@ -9,7 +9,7 @@ const { parseString } = require('xml2js');
 const fs = require('fs');
 
 
-//const path= require ('path'); 
+
 const {MongoClient}= require ('mongodb'); 
 
 
@@ -34,14 +34,16 @@ server.use(cors(corsOptions))
 server.get ('/pagina2.html', (req,res) => {
   const filePath= path.join (__dirname, 'pagina2.html');
   res.sendFile(filePath);
-})
+}
+
+const path= require ('path'); //
 
 server.get ('/nuovaprova.html', (req,res) => {
+  console.log ('utente collegato')
   const filePath= path.join (__dirname, 'nuovaprova.html');
   res.sendFile(filePath);
-})*/
-
-
+})
+*/
 
 server.get('/provajson.js', (req, res) => {
   res.sendFile(__dirname + '/provajson.js');

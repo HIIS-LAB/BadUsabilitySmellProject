@@ -39,7 +39,7 @@ async function DatiPost(url, data) {
     if (datiRisposta.sessionID) {
    idsessione = datiRisposta.sessionID; 
    console.log ("IDsessione dal server", idsessione)
-   document.cookie= "id_sessione=" + idsessione+ "SameSite=Strict; Secure"; 
+   document.cookie= "id_sessione=" + idsessione; 
     }
     if (datiRisposta.message){
         console.log (datiRisposta.message)
@@ -135,11 +135,14 @@ function getTimestamp() {
     return new Date ().toISOString(); 
   }
  
-
 //EVENTI 
 var initialDistance= 0; 
 var direction= ''; 
-//eventi mouse
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+
+
+
+if (!isTouchDevice) {
 settings.events.split(" ").forEach(function(evento) {
     window.addEventListener(evento, function(event) {
        
@@ -177,6 +180,22 @@ settings.events.split(" ").forEach(function(evento) {
         
     });
 });
+
+//evento BEFOREUNLOAD 
+window.addEventListener ('beforeunload', function (event) {
+    var message= 'Sei sicuro di voler abbandonare la pagina?';
+    event.returnValue = message; 
+    var elemento= event.target;
+        var coordinates = calculateCoordinates(elemento);
+        const xpathWithCoordinates = getXPath(elemento,coordinates);
+        direction='$';
+
+        aggiungiEvento (event.type,xpathWithCoordinates,direction); 
+        gestisciEventi (event); 
+    return message; 
+}); 
+
+} else {
 
 
 //eventi touch standard
@@ -319,7 +338,7 @@ settings.zingevents.split(" ").forEach(function (evento) {
             
     });
 });
-
+}
 
 function gestisciEventi (event) {
     if (!primoEvento) {
@@ -352,7 +371,7 @@ function gestisciEventi (event) {
         else {
             inviaRichiesta();
         } } 
-
+    }
         /*if (event.type === "popstate") {
             if (localStorage.getItem ('eventiSalvati') !==null && localStorage.getItem ('start') !== null) {
                 eventiSalvati= JSON.parse(localStorage.getItem('eventiSalvati'));
@@ -366,7 +385,7 @@ function gestisciEventi (event) {
         }
         }*/
         
-    }
+   
 
     function getXPath(element, coordinates) {
         if (!element) {

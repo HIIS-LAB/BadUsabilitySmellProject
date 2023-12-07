@@ -437,13 +437,14 @@ function creaDivSmell(newDiv,sessione) {
  const divSmell= document.createElement ('div')
  divSmell.id = 'divSmell' + sessione.idsessione;
  divSmell.innerHTML = `
- <h3> Patterns</h3>
+ <h3 style="color: red;"> Patterns</h3>
  <p>Bad Usability Smell 1: Too small or close elements</p>
- <p>Bad Usability Smell 2: Too close links </p>
- <p>Bad Usability Smell 3: Distant content </p>
- <p>Bad Usability Smell 4: Too small section </p>
- <p>Bad Usability Smell 5: Bad readability</p>
- <p>Bad Usability Smell 6: Long forms</p>
+ <p> Bad Usability Smell 2: Too close links </p>
+ <p> Bad Usability Smell 3:  Distant content </p>
+ <p>  Bad Usability Smell 4:  Too small section </p>
+ <p>  Bad Usability Smell 5:  Bad readability</p>
+ <p>  Bad Usability Smell 6: Long forms</p>
+
 `;
 
 divSmell.style.marginLeft='2%';
@@ -988,13 +989,19 @@ function cercaPattern (sessione,divDetectorSmell) {
     return response.json();
   })
   .then (data => {
-    console.log (data)
-    console.log ('tipo dati:', typeof data)
     console.log('Risultati:', JSON.stringify(data, null, 2));
-   
+    const divRisultatiSmell= document.createElement ('div')
+    divRisultatiSmell.id = 'divRisultatiSmell' + sessione.idsessione;
+    divRisultatiSmell.innerHTML = JSON.stringify(data, null, 2) ;
+
+//divSmell.style.marginLeft='2%';
+//divSmell.style.paddingTop='5%';
+ divDetectorSmell.appendChild(divRisultatiSmell)
+ //divSmell.scrollIntoView({ behavior: 'smooth', block: 'start' });
     })
 
   .catch(error => {
     console.error('Errore nella chiamata al server:', error);
   });
 }
+
