@@ -9,28 +9,28 @@
    <direction>out</direction>
    <repnumber>*</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+<!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>pan</eventTitle>
    <direction>$</direction>
    <repnumber>*</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+   <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>tap</eventTitle>
    <direction>$</direction>
    <repnumber>1</repnumber>
    <interval>PT2S</interval>
-   <targetElement></targetElement> 
+   <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>focus</eventTitle>
    <direction>in</direction>
    <repnumber>1</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement>
+  <!-- <targetElement></targetElement> --> 
   </event> 
  </pattern>
 
@@ -42,35 +42,35 @@
    <direction>$</direction>
    <repnumber>*</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+   <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>beforeunload</eventTitle>
    <direction>$</direction>
    <repnumber>1</repnumber>
    <interval>PT2S</interval>
-   <targetElement></targetElement> 
+ <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>load</eventTitle> //pageview
    <direction>$</direction>
    <repnumber>1</repnumber>
    <interval>PT2S</interval>
-   <targetElement></targetElement> 
+  <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>beforeunload</eventTitle>
    <direction>$</direction>
    <repnumber>1</repnumber>
    <interval>PT2S</interval>
-   <targetElement></targetElement>
+  <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>load</eventTitle> //
    <direction>$</direction>
    <repnumber>1</repnumber>
    <interval>PT2S</interval>
-   <targetElement></targetElement>
+  <!-- <targetElement></targetElement> --> 
   </event> 
  </pattern>
  
@@ -82,7 +82,7 @@
    <direction>down</direction>
    <repnumber>5</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+   <!-- <targetElement></targetElement> --> 
    </event>
  </pattern>
 
@@ -94,28 +94,28 @@
    <direction>$</direction>
    <repnumber>*</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+   <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>resize</eventTitle>
    <direction>$</direction>
    <repnumber>*</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+  <!-- <targetElement></targetElement> -->  
   </event>
   <event>
    <eventTitle>pan</eventTitle>
    <direction>$</direction>
    <repnumber>*</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+   <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>tap</eventTitle>
    <direction>$</direction>
    <repnumber>*</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement>
+  <!-- <targetElement></targetElement> --> 
   </event> 
  </pattern>
  
@@ -127,21 +127,21 @@
    <direction>$</direction>
    <repnumber>*</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+  <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>pan</eventTitle>
    <direction>$</direction>
    <repnumber>*</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+   <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>pan</eventTitle>
    <direction>down</direction>
    <repnumber>3</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+   <!-- <targetElement></targetElement> --> 
   </event>
  </pattern>
 
@@ -153,21 +153,21 @@
    <direction>$</direction>
    <repnumber>1</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+  <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>focus</eventTitle>
    <direction>in</direction>
    <repnumber>1</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+   <!-- <targetElement></targetElement> --> 
   </event>
   <event>
    <eventTitle>focus</eventTitle>
    <direction>$</direction>
    <repnumber>5</repnumber>
    <interval>PT1S</interval>
-   <targetElement></targetElement> 
+   <!-- <targetElement></targetElement> --> 
   </event>
  </pattern>
 

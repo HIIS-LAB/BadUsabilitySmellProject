@@ -5,9 +5,8 @@ const server = express();
 const cookieParser= require('cookie-parser'); 
 const port = 8000;
 const moment = require('moment');
-const { parseString } = require('xml2js');
+const parseString  = require('xml2js').parseString;
 const fs = require('fs');
-
 
 
 const {MongoClient}= require ('mongodb'); 
@@ -342,7 +341,6 @@ server.get("/sessioni-filtrate", async (req, res) => {
 server.post('/confrontaPattern', express.json(), async (req, res) => {
   try {
     const eventi = req.body.eventi;
-    console.log ('eventi per smell:', eventi)
     const risultati= await verificaPattern(eventi);
     res.json(risultati);
     console.log ('risultati inviati')
@@ -353,106 +351,155 @@ server.post('/confrontaPattern', express.json(), async (req, res) => {
     });
 
 
-////funzione CONFRONTO
-function verificaPattern (eventi) {
-  return new Promise((resolve, reject) => {
-    try {
+// aggiorna array eventi sessione 
+async function verificaPattern (eventi) {
+  try {
     const xml = fs.readFileSync('patternsDefinition.xml', 'utf-8');
-    let risultati = {};
-
-  parseString(xml, (err, result) => {
-    if (err) {
-        console.error('Errore durante l\'analisi del file XML:', err);
-        res.status(500).send('Errore durante l\'analisi del file XML.');
-        return;
-    }
-
-    const patterns= result.patternsContainer.pattern;
+    const patternObject = await creaXmlObject(xml);
     
-    patterns.forEach((pattern) =>{
-      const patternName= pattern.patternName;
-      const eventsiInPattern= pattern.event; 
-      let patternTrovato=true; 
+    const eventiAggiornati = eventi.map(event => ({
+      ...event,
+      interval: creaInterval(eventi, event),
+      repnumber: getRepnumber(eventi, eventi.indexOf(event))
+    }));
 
-      eventsiInPattern.forEach(xmlEvent => {
-        const eventTitle = xmlEvent.eventTitle;
-        const eventDirection = xmlEvent.direction;
-        const eventRepnumber = xmlEvent.repnumber;
-        const eventInterval = xmlEvent.interval;
-    
-        const matchingEvent = eventi.find((evento) => {
-          return evento.type === eventTitle && evento.direction === eventDirection;
-        });
-
-        if (!matchingEvent) {
-          patternTrovato = false;
-          return;
-        }
-      
-        const interval = creaInterval(eventi, matchingEvent);
-        const repNumber = getRepnumber(eventi, eventi.indexOf(matchingEvent));
-
-        if (interval <= eventInterval && repNumber === eventRepnumber) {
-          patternTrovato= true; 
-        } else {
-          patternTrovato = false;
-        }
-      });
-      risultati[patternName] = patternTrovato;
-
+    eventiAggiornati.forEach(evento => {
+      delete evento.xpath;
+      delete evento.url;
+      delete evento.time;
     });
-    resolve(risultati); 
-})
-    } catch (error) {
-      console.error('Errore durante l\'analisi del file XML:', error);
-      reject('Errore durante l\'analisi del file XML.');
-    }
-})
+
+    //console.log(eventiAggiornati);
+    const risultati = confrontaPattern(eventiAggiornati, patternObject);
+    return risultati;
+  } catch (error) {
+    console.error('Errore durante l\'analisi del file XML:', error);
+    throw new Error('Errore durante l\'analisi del file XML.');
+  }
 }
 
-//INTERVAL
-function creaInterval (eventi,evento) {
+// xml array eventi 
+function creaXmlObject(xml) {
+  return new Promise((resolve, reject) => {
+    parseString(xml, (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        try {
+          const patternsContainer = result.patternsContainer;
+          if (!patternsContainer || !patternsContainer.pattern) {
+            throw new Error('Invalid structure: patternsContainer or pattern not found');
+          }
+          const patterns = Array.isArray(patternsContainer.pattern) ? patternsContainer.pattern : [patternsContainer.pattern];
+          const patternObject = {};
+
+          patterns.forEach(xmlPattern => {
+            if (!xmlPattern.event) {
+              throw new Error('Invalid structure: event not found in pattern');
+            }
+
+            const events = Array.isArray(xmlPattern.event) ? xmlPattern.event : [xmlPattern.event];
+
+            const patternEvents = events.map(xmlEvent => {
+              if (!xmlEvent.eventTitle || !xmlEvent.direction || !xmlEvent.repnumber || !xmlEvent.interval) {
+                throw new Error('Invalid structure: missing event properties');
+              }
+              return {
+                type: xmlEvent.eventTitle[0],
+                direction: xmlEvent.direction[0],
+                repnumber: xmlEvent.repnumber[0],
+                interval: xmlEvent.interval[0],
+              };
+            });
+            patternObject[xmlPattern.patternName[0]] = patternEvents;
+          });
+
+          resolve(patternObject);
+          //console.log (patternObject)
+        } catch (error) {
+          reject(error);
+        }
+      }
+    });
+  });
+}
+
+
+
+// INTERVAL
+function creaInterval(eventi, evento) {
   const index = eventi.indexOf(evento);
   if (index > 0) {
-    const timeCurrent = evento.time;
-    const timePrecedente = eventi[index - 1].time;
-    const interval = timeCurrent - timePrecedente;
-    return interval;
+    const timeCurrent = new Date(evento.time).getTime();
+    const timePrecedente = new Date(eventi[index - 1].time).getTime();
+    const intervalInMilliseconds = timeCurrent - timePrecedente;
+    const intervalInSeconds = intervalInMilliseconds / 1000;
+    const intervalInISO8601 = `PT${intervalInSeconds}S`;
+    return intervalInISO8601;
   }
-  return 0;
+  return 'PT0S';
 }
 
-//REPNUMBER
-function getRepnumber (eventi,index) {
-  const typeCurrent= eventi[index].type; 
-  const directionCurrent= eventi[index].direction; 
-  const repNumber= 1; 
+// REPNUMBER
+function getRepnumber(eventi, index) {
+  const typeCurrent = eventi[index].type;
+  const directionCurrent = eventi[index].direction;
+  const repNumberPattern = '*'; 
+  const repNumberCurrent = eventi[index].repnumber;
+  const isWildcardRepnumber = repNumberPattern === '*' || repNumberPattern === '$';
+  if (isWildcardRepnumber || repNumberCurrent === repNumberPattern) {
 
-   // 4 precedenti 
-  for (let i = index - 1; i >= Math.max(0, index - 4); i--) {
-    const typePrecedente = eventi[i].type;
-    const directionPrecedente = eventi[i].direction;
+    // prima
+    let repNumber = 1;
+    for (let i = index - 1; i >= Math.max(0, index - 4); i--) {
+      const typePrecedente = eventi[i].type;
+      const directionPrecedente = eventi[i].direction;
 
-    if (typeCurrent === typePrecedente && directionCurrent === directionPrecedente) {
-      repNumber++;
-    } else {
-      break;
+      if (typeCurrent === typePrecedente && directionCurrent === directionPrecedente) {
+        repNumber++;
+      } else {
+        break;
+      }
     }
-  }
 
-  // 4 successivi 
-  for (let i = index + 1; i <= Math.min(index + 4, eventi.length - 1); i++) {
-    const typeSuccessivo = eventi[i].type;
-    const directionSuccessivo = eventi[i].direction;
-
-    if (typeCurrent === typeSuccessivo && directionCurrent === directionSuccessivo) {
-      repNumber++;
-    } else {
-      break;
+    // dopo
+    for (let i = index + 1; i <= Math.min(index + 4, eventi.length - 1); i++) {
+      const typeSuccessivo = eventi[i].type;
+      const directionSuccessivo = eventi[i].direction;
+      if (typeCurrent === typeSuccessivo && directionCurrent === directionSuccessivo) {
+        repNumber++;
+      } else {
+        break;
+      }
     }
+    return repNumber;
   }
-  return repNumber; 
+  return 0; 
 }
+
+//confronto
+function confrontaPattern(eventi, patternObject) {
+  const risultati = {};
+
+  Object.keys(patternObject).forEach(patternName => {
+    const eventsInPattern = patternObject[patternName];
+    const patternTrovato = eventsInPattern.every(xmlEvent => {
+      return eventi.some(evento => {
+        const repnumberMatch =
+          xmlEvent.repnumber === '*' || evento.repnumber == parseInt(xmlEvent.repnumber);
+        return (
+          evento.type === xmlEvent.type &&
+          (xmlEvent.direction === '$' || evento.direction === evento.direction) &&
+          repnumberMatch &&
+          (xmlEvent.interval <= evento.interval)
+        );
+      });
+    });
+    risultati[patternName] = patternTrovato;
+  });
+  return risultati;
+}
+
 
 server.listen(port, () => {
   console.log(`Server in ascolto sulla porta ${port}`);
